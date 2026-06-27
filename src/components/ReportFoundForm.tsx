@@ -4,9 +4,13 @@
  */
 
 import React, { useState, useRef } from 'react';
-import { PlusCircle, Camera, Upload, AlertCircle, FileText, MapPin, Phone, Building, Check, Heart, User, HelpCircle, Baby, X } from 'lucide-react';
+import { PlusCircle, Camera, AlertCircle, MapPin, Phone, Building, Check, Heart, User, HelpCircle, Baby } from 'lucide-react';
 import { FoundPerson } from '../types';
 import { reportarEncontrado, ResultadoRegistro } from '../api';
+import PhotoUploader, { Photo } from './form/PhotoUploader';
+import HelpModal, { HelpStep } from './form/HelpModal';
+import DocumentInput from './form/DocumentInput';
+import LocationCombobox, { useSavedLocations } from './form/LocationCombobox';
 
 interface ReportFoundFormProps {
   onAddPerson: (person: FoundPerson) => void;
@@ -14,7 +18,19 @@ interface ReportFoundFormProps {
 
 // ponytail: capacity knob — backend accepts varias fotos del mismo registro
 const MAX_IMAGES = 5;
-type Photo = { file: File; url: string };
+
+// Teléfono VE: 0424-8135166 / 04248135166 (4+7) o +58 424 8135166 (+58 +10), con o sin guion/espacio.
+const isValidPhone = (v: string) => /^(0\d{10}|\+58\d{10})$/.test(v.replace(/[\s-]/g, ''));
+
+const HELP_STEPS: HelpStep[] = [
+  { n: 1, t: 'Capturar Foto', d: 'Carga una o varias fotos. El rostro debe estar bien iluminado y de frente.' },
+  { n: 2, t: 'Definir Edad', d: 'Indica si es menor de edad. Si lo es, se ocultan nombre y apellido y se pide la identificación del responsable.' },
+  { n: 3, t: 'Refugio y Contacto', d: 'Ingresa el refugio/hospital y el teléfono del responsable (obligatorios).' },
+  { n: 4, t: 'Indexación Facial', d: 'Al enviar, el rostro se procesa y queda disponible de inmediato para las búsquedas.' },
+];
+
+const inputClass =
+  'w-full px-3.5 py-2.5 bg-white border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-slate-800 text-sm placeholder-slate-400 outline-none transition-all font-medium shadow-sm';
 
 export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
   const [showHelp, setShowHelp] = useState(false);
@@ -32,9 +48,12 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<ResultadoRegistro | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // Errores por campo: { photos, refugio, telefono, docResponsable, _form }
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const clearError = (field: string) => setErrors((prev) => (prev[field] ? { ...prev, [field]: '' } : prev));
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { locations, remember, forget } = useSavedLocations();
+  const inFlight = useRef(false); // evita registros duplicados si el usuario satura el botón
 
   const addFiles = (files: FileList | File[]) => {
     const imgs = Array.from(files).filter((f) => f.type.startsWith('image/'));
@@ -42,35 +61,28 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
       const room = MAX_IMAGES - prev.length;
       return [...prev, ...imgs.slice(0, room).map((file) => ({ file, url: URL.createObjectURL(file) }))];
     });
-    setError(null);
+    clearError('photos');
   };
   const removePhoto = (idx: number) => setPhotos((prev) => prev.filter((_, i) => i !== idx));
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) addFiles(e.target.files);
-    e.target.value = '';
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (inFlight.current) return; // ya hay un registro en curso, ignora el reintento
 
-    if (photos.length === 0) {
-      setError('Es obligatorio adjuntar al menos una fotografía clara del rostro.');
-      return;
-    }
-    if (!refugio.trim()) {
-      setError('Indica el refugio, hospital o centro donde se encuentra la persona.');
-      return;
-    }
-    if (!telefonoResponsable.trim()) {
-      setError('Proporciona el teléfono del responsable para coordinar.');
-      return;
-    }
-    if (isChild && !docResponsable.trim()) {
-      setError('Para un menor, la identificación del responsable es obligatoria.');
+    const errs: Record<string, string> = {};
+    if (photos.length === 0) errs.photos = 'Adjunta al menos una fotografía clara del rostro.';
+    if (!refugio.trim()) errs.refugio = 'Indica el refugio, hospital o centro receptor.';
+    if (!telefonoResponsable.trim()) errs.telefono = 'Proporciona el teléfono del responsable.';
+    else if (!isValidPhone(telefonoResponsable)) errs.telefono = 'Formato inválido. Ej: 0424-8135166 o +58 424 8135166.';
+    if (isChild && !docResponsable.trim()) errs.docResponsable = 'La identificación del responsable es obligatoria para un menor.';
+
+    if (Object.keys(errs).length) {
+      setErrors(errs);
       return;
     }
 
-    setError(null);
+    setErrors({});
+    inFlight.current = true;
     setIsSubmitting(true);
     try {
       const res = await reportarEncontrado({
@@ -87,6 +99,7 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
         descripcion,
       });
       setResult(res);
+      remember(ubicacion);
 
       // Bump the local "personas reportadas" badge in App (cosmetic).
       onAddPerson({
@@ -102,8 +115,9 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
         status: 'refugiado',
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo registrar. Intenta de nuevo.');
+      setErrors({ _form: err instanceof Error ? err.message : 'No se pudo registrar. Intenta de nuevo.' });
     } finally {
+      inFlight.current = false;
       setIsSubmitting(false);
     }
   };
@@ -121,11 +135,14 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
     setDocResponsable('');
     setDescripcion('');
     setResult(null);
-    setError(null);
+    setErrors({});
   };
 
-  const inputClass =
-    'w-full px-3.5 py-2.5 bg-white border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-slate-800 text-sm placeholder-slate-400 outline-none transition-all font-medium shadow-sm';
+  const fieldClass = (field?: string) =>
+    field && errors[field] ? `${inputClass} border-red-400 focus:border-red-500 focus:ring-red-500/20` : inputClass;
+
+  const FieldError = ({ field }: { field: string }) =>
+    errors[field] ? <p className="text-xs text-red-600 mt-1 flex items-center gap-1"><AlertCircle size={13} className="shrink-0" />{errors[field]}</p> : null;
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-6" id="report-found-view">
@@ -150,46 +167,14 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
         </button>
       </div>
 
-      {showHelp && (
-        <div
-          className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
-          onClick={() => setShowHelp(false)}
-          id="report-help-modal"
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl relative p-5 sm:p-6 max-h-[90vh] overflow-y-auto animate-[fadeIn_0.2s_ease-out]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={() => setShowHelp(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 p-1.5 rounded-full transition-all"
-            >
-              <X size={18} />
-            </button>
-            <h3 className="text-base font-bold text-emerald-950 flex items-center gap-2 pr-8 mb-5">
-              <HelpCircle size={18} className="text-emerald-600 shrink-0" />
-              Cómo reportar una persona encontrada
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {[
-                { n: 1, t: 'Capturar Foto', d: 'Carga una o varias fotos. El rostro debe estar bien iluminado y de frente.' },
-                { n: 2, t: 'Definir Edad', d: 'Indica si es menor de edad. Si lo es, se ocultan nombre y apellido y se pide la identificación del responsable.' },
-                { n: 3, t: 'Refugio y Contacto', d: 'Ingresa el refugio/hospital y el teléfono del responsable (obligatorios).' },
-                { n: 4, t: 'Indexación Facial', d: 'Al enviar, el rostro se procesa y queda disponible de inmediato para las búsquedas.' },
-              ].map((s) => (
-                <div key={s.n} className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 flex gap-3">
-                  <span className="inline-flex w-6 h-6 items-center justify-center rounded-full bg-emerald-600 text-white text-xs font-black shrink-0">{s.n}</span>
-                  <div className="space-y-1">
-                    <h4 className="text-sm font-bold text-slate-800">{s.t}</h4>
-                    <p className="text-xs text-slate-500 leading-snug">{s.d}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      <HelpModal
+        open={showHelp}
+        onClose={() => setShowHelp(false)}
+        title="Cómo reportar una persona encontrada"
+        steps={HELP_STEPS}
+        accent="emerald"
+        id="report-help-modal"
+      />
 
       {result ? (
         <div className="text-center py-10 px-4 max-w-md mx-auto" id="report-success-screen">
@@ -231,10 +216,10 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-5">
-          {error && (
+          {errors._form && (
             <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-start gap-2.5 text-sm" id="report-error">
               <AlertCircle size={18} className="mt-0.5 shrink-0 text-red-500" />
-              <span>{error}</span>
+              <span>{errors._form}</span>
             </div>
           )}
 
@@ -245,52 +230,10 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
                 <Camera size={14} className="text-blue-600" />
                 Fotos de la persona <span className="text-rose-500">*</span>
               </label>
-              {photos.length > 0 && (
-                <span className="text-[11px] font-semibold text-slate-400">{photos.length}/{MAX_IMAGES}</span>
-              )}
+              {photos.length > 0 && <span className="text-[11px] font-semibold text-slate-400">{photos.length}/{MAX_IMAGES}</span>}
             </div>
-
-            <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" multiple={MAX_IMAGES > 1} className="hidden" />
-
-            <div
-              className={`border-2 border-dashed rounded-xl p-4 transition-all ${photos.length ? 'border-blue-300 bg-blue-50/20' : 'border-blue-600 bg-blue-50/30'}`}
-            >
-              {photos.length === 0 ? (
-                <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full text-center py-5">
-                  <div className="w-11 h-11 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mx-auto mb-2">
-                    <Upload size={20} />
-                  </div>
-                  <p className="text-sm font-semibold text-slate-700">Haz clic para subir las fotos</p>
-                  <p className="text-xs text-slate-400 mt-0.5">JPG o PNG — rostro frontal claro{MAX_IMAGES > 1 ? ` (hasta ${MAX_IMAGES})` : ''}</p>
-                </button>
-              ) : (
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
-                  {photos.map((p, idx) => (
-                    <div key={idx} className="relative aspect-square">
-                      <img src={p.url} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover rounded-lg border border-slate-200 shadow-sm" />
-                      <button
-                        type="button"
-                        onClick={() => removePhoto(idx)}
-                        className="absolute -top-1.5 -right-1.5 bg-white text-slate-500 p-1 rounded-full shadow-md border border-slate-200 hover:text-rose-600 hover:border-rose-200 transition-all z-10"
-                        aria-label="Quitar foto"
-                      >
-                        <X size={13} strokeWidth={3} />
-                      </button>
-                    </div>
-                  ))}
-                  {photos.length < MAX_IMAGES && (
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="aspect-square rounded-lg border-2 border-dashed border-blue-300 text-blue-500 hover:border-blue-500 hover:bg-blue-50 flex flex-col items-center justify-center gap-1 transition-all"
-                    >
-                      <Upload size={18} />
-                      <span className="text-[10px] font-bold">Agregar</span>
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
+            <PhotoUploader photos={photos} max={MAX_IMAGES} accent="blue" error={!!errors.photos} onAdd={addFiles} onRemove={removePhoto} />
+            <FieldError field="photos" />
           </div>
 
           {/* Child Toggle Switch */}
@@ -330,13 +273,13 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
                   <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
                     Nombre <span className="text-slate-400 font-medium normal-case">(opcional)</span>
                   </label>
-                  <input type="text" placeholder="Ej: Juan" value={nombre} onChange={(e) => setNombre(e.target.value)} className={inputClass} id="person-name-input" />
+                  <input type="text" placeholder="Ej: Juan" maxLength={80} value={nombre} onChange={(e) => setNombre(e.target.value)} className={inputClass} id="person-name-input" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
                     Apellido <span className="text-slate-400 font-medium normal-case">(opcional)</span>
                   </label>
-                  <input type="text" placeholder="Ej: Gómez" value={apellido} onChange={(e) => setApellido(e.target.value)} className={inputClass} id="person-lastname-input" />
+                  <input type="text" placeholder="Ej: Gómez" maxLength={80} value={apellido} onChange={(e) => setApellido(e.target.value)} className={inputClass} id="person-lastname-input" />
                 </div>
               </div>
 
@@ -344,19 +287,7 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
                   Documento de identidad <span className="text-slate-400 font-medium normal-case">(opcional)</span>
                 </label>
-                <div className="flex gap-2">
-                  <select
-                    value={docTipo}
-                    onChange={(e) => setDocTipo(e.target.value)}
-                    className="px-3 py-2.5 bg-white border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-slate-800 text-sm outline-none transition-all font-bold shadow-sm shrink-0"
-                    aria-label="Tipo de documento"
-                  >
-                    <option value="V">V</option>
-                    <option value="E">E</option>
-                    <option value="P">P</option>
-                  </select>
-                  <input type="text" placeholder="Ej: 12345678" value={docNumero} onChange={(e) => setDocNumero(e.target.value)} className={inputClass} id="person-doc-input" />
-                </div>
+                <DocumentInput tipo={docTipo} numero={docNumero} onTipo={setDocTipo} onNumero={setDocNumero} accent="blue" numeroId="person-doc-input" />
               </div>
             </fieldset>
           )}
@@ -382,18 +313,19 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
                   type="text"
                   placeholder="Ej: Refugio Polideportivo de Catia"
                   value={refugio}
-                  onChange={(e) => setRefugio(e.target.value)}
-                  className={`${inputClass} ${refugio ? 'pl-3.5' : 'pl-10'}`}
+                  onChange={(e) => { setRefugio(e.target.value); clearError('refugio'); }}
+                  className={`${fieldClass('refugio')} ${refugio ? 'pl-3.5' : 'pl-10'}`}
                   id="refugio-input"
                 />
               </div>
+              <FieldError field="refugio" />
             </div>
 
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
                 Dónde se encontró <span className="text-slate-400 font-medium normal-case">(opcional)</span>
               </label>
-              <input type="text" placeholder="Ej: Plaza Bolívar, Caracas" value={ubicacion} onChange={(e) => setUbicacion(e.target.value)} className={inputClass} id="ubicacion-input" />
+              <LocationCombobox value={ubicacion} onChange={setUbicacion} options={locations} onForget={forget} inputClass={inputClass} id="ubicacion-input" />
             </div>
 
             <div className="space-y-1.5">
@@ -407,14 +339,17 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
                   </div>
                 )}
                 <input
-                  type="text"
-                  placeholder="Ej: 0414-9999999"
+                  type="tel"
+                  inputMode="tel"
+                  placeholder="0424-8135166 o +58 424 8135166"
+                  maxLength={17}
                   value={telefonoResponsable}
-                  onChange={(e) => setTelefonoResponsable(e.target.value)}
-                  className={`${inputClass} ${telefonoResponsable ? 'pl-3.5' : 'pl-10'}`}
+                  onChange={(e) => { setTelefonoResponsable(e.target.value.replace(/[^\d+\s-]/g, '')); clearError('telefono'); }}
+                  className={`${fieldClass('telefono')} ${telefonoResponsable ? 'pl-3.5' : 'pl-10'}`}
                   id="contact-phone-input"
                 />
               </div>
+              <FieldError field="telefono" />
             </div>
 
             {isChild && (
@@ -424,23 +359,31 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
                 </label>
                 <input
                   type="text"
-                  placeholder="Ej: V-11111111"
+                  inputMode="numeric"
+                  placeholder="Ej: 11111111"
+                  maxLength={9}
                   value={docResponsable}
-                  onChange={(e) => setDocResponsable(e.target.value)}
-                  className={inputClass}
+                  onChange={(e) => { setDocResponsable(e.target.value.replace(/\D/g, '')); clearError('docResponsable'); }}
+                  className={fieldClass('docResponsable')}
                   id="doc-responsable-input"
                 />
-                <p className="text-[11px] text-amber-600">Obligatorio para registrar a un menor.</p>
+                {errors.docResponsable ? (
+                  <FieldError field="docResponsable" />
+                ) : (
+                  <p className="text-[11px] text-amber-600">Obligatorio para registrar a un menor.</p>
+                )}
               </div>
             )}
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
-                Descripción <span className="text-slate-400 font-medium normal-case">(opcional)</span>
+              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
+                <span>Descripción <span className="text-slate-400 font-medium normal-case">(opcional)</span></span>
+                <span className="text-[10px] font-semibold text-slate-400 normal-case tabular-nums">{descripcion.length}/350</span>
               </label>
               <textarea
                 placeholder="Describe ropa, señas, estado físico, edad aproximada..."
                 rows={4}
+                maxLength={350}
                 value={descripcion}
                 onChange={(e) => setDescripcion(e.target.value)}
                 className={`${inputClass} resize-none`}

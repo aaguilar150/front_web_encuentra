@@ -4,23 +4,33 @@
  */
 
 import React, { useState, useRef } from 'react';
-import { Search, User, Shield, Camera, Upload, AlertCircle, FileText, Heart, MapPin, Phone, Eye, ArrowRight, RefreshCw, CheckCircle2, HelpCircle, X, Flag } from 'lucide-react';
+import { Search, Camera, AlertCircle, FileText, Heart, MapPin, Phone, ArrowRight, CheckCircle2, HelpCircle, X, Flag } from 'lucide-react';
 import { FoundPerson, MatchResult } from '../types';
 import { buscarPersona } from '../api';
+import PhotoUploader, { Photo } from './form/PhotoUploader';
+import HelpModal, { HelpStep } from './form/HelpModal';
+import DocumentInput from './form/DocumentInput';
 
 interface SearchMissingFormProps {
   onTriggerReunion: (person: FoundPerson) => void;
 }
 
+// ponytail: capacity knob — set to 1 for single-photo mode, raise to allow more
+const MAX_IMAGES = 1;
+const PAGE_SIZE = 6;
+
+const HELP_STEPS: HelpStep[] = [
+  { n: 1, t: 'Subir Fotografía', d: 'Sube una foto del rostro de la persona que buscas. Se requiere visibilidad frontal clara.' },
+  { n: 2, t: 'Cotejo Facial AI', d: 'El sistema extrae un vector facial (embedding) y lo compara por distancia coseno en ChromaDB.' },
+  { n: 3, t: 'Ver Coincidencias', d: 'Los resultados se ordenan por semejanza. Verás la descripción física y el centro de refugio.' },
+  { n: 4, t: 'Contacto Seguro', d: 'Ante una coincidencia cierta, solicita el reencuentro y preséntate con tu identificación oficial.' },
+];
+
 export default function SearchMissingForm({ onTriggerReunion }: SearchMissingFormProps) {
-  // ponytail: capacity knob — set to 1 for single-photo mode, raise to allow more
-  const MAX_IMAGES = 5;
-
-  type Photo = { file: File; url: string };
-
   const [showHelp, setShowHelp] = useState(false);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [qNombre, setQNombre] = useState('');
+  const [qDocTipo, setQDocTipo] = useState('V');
   const [qDocNumero, setQDocNumero] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
@@ -28,14 +38,14 @@ export default function SearchMissingForm({ onTriggerReunion }: SearchMissingFor
   const [searchResults, setSearchResults] = useState<MatchResult[] | null>(null);
   const [selectedCandidate, setSelectedCandidate] = useState<FoundPerson | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [idError, setIdError] = useState<string | null>(null);
   const [isSuccessReunion, setIsSuccessReunion] = useState(false);
   const [matchRequestedPerson, setMatchRequestedPerson] = useState<FoundPerson | null>(null);
   const [reportedIds, setReportedIds] = useState<string[]>([]);
   const [page, setPage] = useState(0);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
-  const PAGE_SIZE = 6;
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const inFlight = useRef(false); // evita peticiones duplicadas si el usuario satura el botón
 
   const addFiles = (files: FileList | File[]) => {
     const imgs = Array.from(files).filter((f) => f.type.startsWith('image/'));
@@ -45,27 +55,23 @@ export default function SearchMissingForm({ onTriggerReunion }: SearchMissingFor
     });
     setError(null);
   };
-
   const removePhoto = (idx: number) => setPhotos((prev) => prev.filter((_, i) => i !== idx));
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) addFiles(e.target.files);
-    e.target.value = ''; // allow re-selecting the same file
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    if (e.dataTransfer.files) addFiles(e.dataTransfer.files);
-  };
 
   const startAnalysis = (e: React.FormEvent) => {
     e.preventDefault();
+    if (inFlight.current) return; // ya hay una búsqueda en curso, ignora el reintento
     if (photos.length === 0) {
       setError('Por favor, selecciona o sube al menos una foto de la persona que buscas.');
       return;
     }
+    if (!qNombre.trim() && !qDocNumero.trim()) {
+      setIdError('Indica al menos el nombre o la cédula de quien buscas.');
+      return;
+    }
 
+    inFlight.current = true;
     setError(null);
+    setIdError(null);
     setIsAnalyzing(true);
     setAnalysisProgress(0);
     setAnalysisStep('Subiendo fotos...');
@@ -92,10 +98,12 @@ export default function SearchMissingForm({ onTriggerReunion }: SearchMissingFor
     buscarPersona({
       files: photos.map((p) => p.file),
       nombre: qNombre,
+      docTipo: qDocTipo,
       docNumero: qDocNumero,
     })
       .then((results) => {
         done = true;
+        inFlight.current = false;
         clearInterval(tick);
         setAnalysisProgress(100);
         setAnalysisStep('Búsqueda completada.');
@@ -106,6 +114,7 @@ export default function SearchMissingForm({ onTriggerReunion }: SearchMissingFor
       })
       .catch((err) => {
         done = true;
+        inFlight.current = false;
         clearInterval(tick);
         setIsAnalyzing(false);
         setAnalysisProgress(0);
@@ -121,6 +130,7 @@ export default function SearchMissingForm({ onTriggerReunion }: SearchMissingFor
 
   const handleResetSearch = () => {
     setPhotos([]);
+    setIdError(null);
     setSearchResults(null);
     setSelectedCandidate(null);
     setIsSuccessReunion(false);
@@ -131,6 +141,10 @@ export default function SearchMissingForm({ onTriggerReunion }: SearchMissingFor
 
   const totalPages = searchResults ? Math.ceil(searchResults.length / PAGE_SIZE) : 0;
   const pageItems = searchResults ? searchResults.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE) : [];
+
+  const idInputClass = `w-full px-3.5 py-2.5 bg-white border focus:ring-2 rounded-xl text-slate-800 text-sm placeholder-slate-400 outline-none transition-all font-medium shadow-sm ${
+    idError ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' : 'border-slate-200 focus:border-rose-500 focus:ring-rose-500/20'
+  }`;
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-6" id="search-missing-view">
@@ -155,46 +169,14 @@ export default function SearchMissingForm({ onTriggerReunion }: SearchMissingFor
         </button>
       </div>
 
-      {showHelp && (
-        <div
-          className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
-          onClick={() => setShowHelp(false)}
-          id="help-procedure-modal"
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl relative p-5 sm:p-6 max-h-[90vh] overflow-y-auto animate-[fadeIn_0.2s_ease-out]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={() => setShowHelp(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 p-1.5 rounded-full transition-all"
-            >
-              <X size={18} />
-            </button>
-            <h3 className="text-base font-bold text-rose-900 flex items-center gap-2 pr-8 mb-5">
-              <HelpCircle size={18} className="text-rose-500 shrink-0" />
-              Procedimiento de Búsqueda y Reencuentro
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {[
-                { n: 1, t: 'Subir Fotografía', d: 'Sube una foto del rostro de la persona que buscas. Se requiere visibilidad frontal clara.' },
-                { n: 2, t: 'Cotejo Facial AI', d: 'El sistema extrae un vector facial (embedding) y lo compara por distancia coseno en ChromaDB.' },
-                { n: 3, t: 'Ver Coincidencias', d: 'Los resultados se ordenan por semejanza. Verás la descripción física y el centro de refugio.' },
-                { n: 4, t: 'Contacto Seguro', d: 'Ante una coincidencia cierta, solicita el reencuentro y preséntate con tu identificación oficial.' },
-              ].map((s) => (
-                <div key={s.n} className="bg-rose-50/50 p-4 rounded-xl border border-rose-100 flex gap-3">
-                  <span className="inline-flex w-6 h-6 items-center justify-center rounded-full bg-rose-500 text-white text-xs font-black shrink-0">{s.n}</span>
-                  <div className="space-y-1">
-                    <h4 className="text-sm font-bold text-slate-800">{s.t}</h4>
-                    <p className="text-xs text-slate-500 leading-snug">{s.d}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      <HelpModal
+        open={showHelp}
+        onClose={() => setShowHelp(false)}
+        title="Procedimiento de Búsqueda y Reencuentro"
+        steps={HELP_STEPS}
+        accent="rose"
+        id="help-procedure-modal"
+      />
 
       {isSuccessReunion ? (
         <div className="text-center py-8 px-4 max-w-lg mx-auto" id="success-reunion-screen">
@@ -221,13 +203,6 @@ export default function SearchMissingForm({ onTriggerReunion }: SearchMissingFor
         </div>
       ) : !searchResults ? (
         <form onSubmit={startAnalysis} className="space-y-5">
-          {error && (
-            <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-start gap-2.5 text-sm" id="search-error">
-              <AlertCircle size={18} className="mt-0.5 shrink-0 text-red-500" />
-              <span>{error}</span>
-            </div>
-          )}
-
           {/* Step 1: Image Selection */}
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-2">
@@ -235,100 +210,51 @@ export default function SearchMissingForm({ onTriggerReunion }: SearchMissingFor
                 <Camera size={14} className="text-rose-600" />
                 Fotos de la persona
               </label>
-              {photos.length > 0 && (
-                <span className="text-[11px] font-semibold text-slate-400">{photos.length}/{MAX_IMAGES}</span>
-              )}
+              {photos.length > 0 && <span className="text-[11px] font-semibold text-slate-400">{photos.length}/{MAX_IMAGES}</span>}
             </div>
 
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleImageUpload}
-              accept="image/*"
-              multiple={MAX_IMAGES > 1}
-              className="hidden"
-            />
+            <PhotoUploader photos={photos} max={MAX_IMAGES} accent="rose" error={!!error} disabled={isAnalyzing} onAdd={addFiles} onRemove={removePhoto} />
+            {error && (
+              <p className="text-xs text-red-600 mt-1 flex items-center gap-1" id="search-error">
+                <AlertCircle size={13} className="shrink-0" />{error}
+              </p>
+            )}
 
-            {/* Drag & Drop / thumbnails grid */}
-            <div
-              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-              onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleDrop(e); }}
-              className={`border-2 border-dashed rounded-xl p-4 transition-all ${
-                photos.length ? 'border-rose-300 bg-rose-50/20' : 'border-rose-600 bg-rose-50/40'
-              } ${isAnalyzing ? 'opacity-60 pointer-events-none' : ''}`}
-              id="image-dropzone"
-            >
-              {photos.length === 0 ? (
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full text-center py-5 cursor-pointer"
-                >
-                  <div className="w-11 h-11 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center mx-auto mb-2">
-                    <Upload size={20} />
-                  </div>
-                  <p className="text-sm font-semibold text-slate-700">Haz clic o arrastra las fotos aquí</p>
-                  <p className="text-xs text-slate-400 mt-0.5">JPG o PNG — rostro frontal claro{MAX_IMAGES > 1 ? ` (hasta ${MAX_IMAGES})` : ''}</p>
-                </button>
-              ) : (
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
-                  {photos.map((p, idx) => (
-                    <div key={idx} className="relative aspect-square group">
-                      <img
-                        src={p.url}
-                        alt={`Foto ${idx + 1}`}
-                        className="w-full h-full object-cover rounded-lg border border-slate-200 shadow-sm"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removePhoto(idx)}
-                        className="absolute -top-1.5 -right-1.5 bg-white text-slate-500 p-1 rounded-full shadow-md border border-slate-200 hover:text-rose-600 hover:border-rose-200 transition-all z-10"
-                        aria-label="Quitar foto"
-                      >
-                        <X size={13} strokeWidth={3} />
-                      </button>
-                    </div>
-                  ))}
-                  {photos.length < MAX_IMAGES && (
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="aspect-square rounded-lg border-2 border-dashed border-rose-300 text-rose-500 hover:border-rose-500 hover:bg-rose-50 flex flex-col items-center justify-center gap-1 transition-all"
-                    >
-                      <Upload size={18} />
-                      <span className="text-[10px] font-bold">Agregar</span>
-                    </button>
-                  )}
+            {/* Identity: requerido al menos nombre O cédula */}
+            <div className="space-y-1.5 pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                    Nombre <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Nombre de quien buscas"
+                    maxLength={80}
+                    value={qNombre}
+                    onChange={(e) => { setQNombre(e.target.value); setIdError(null); }}
+                    className={idInputClass}
+                  />
                 </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                    Cédula <span className="text-rose-500">*</span>
+                  </label>
+                  <DocumentInput
+                    tipo={qDocTipo}
+                    numero={qDocNumero}
+                    onTipo={setQDocTipo}
+                    onNumero={(v) => { setQDocNumero(v); setIdError(null); }}
+                    accent="rose"
+                    error={!!idError}
+                  />
+                </div>
+              </div>
+              {idError ? (
+                <p className="text-xs text-red-600 flex items-center gap-1"><AlertCircle size={13} className="shrink-0" />{idError}</p>
+              ) : (
+                <p className="text-[11px] text-slate-400">Indica al menos uno: nombre o cédula.</p>
               )}
-            </div>
-
-            {/* Optional identity hints — al menos uno ayuda a afinar la búsqueda */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
-                  Nombre <span className="text-slate-400 font-medium normal-case">(opcional)</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Nombre de quien buscas"
-                  value={qNombre}
-                  onChange={(e) => setQNombre(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-white border border-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 rounded-xl text-slate-800 text-sm placeholder-slate-400 outline-none transition-all font-medium shadow-sm"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
-                  Cédula <span className="text-slate-400 font-medium normal-case">(opcional)</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ej: 12345678"
-                  value={qDocNumero}
-                  onChange={(e) => setQDocNumero(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-white border border-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 rounded-xl text-slate-800 text-sm placeholder-slate-400 outline-none transition-all font-medium shadow-sm"
-                />
-              </div>
             </div>
           </div>
 
@@ -380,101 +306,99 @@ export default function SearchMissingForm({ onTriggerReunion }: SearchMissingFor
           <div className="space-y-3">
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Posibles coincidencias — toca una para ver sus datos:</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {pageItems.map((result, idx) => {
-                  const person = result.foundPerson;
-                  const hasCi = !!person.ci && !/desconocido|no aplica/i.test(person.ci);
-                  const isReported = reportedIds.includes(person.id);
-                  const isConfirming = confirmingId === person.id;
+              {pageItems.map((result, idx) => {
+                const person = result.foundPerson;
+                const hasCi = !!person.ci && !/desconocido|no aplica/i.test(person.ci);
+                const isReported = reportedIds.includes(person.id);
+                const isConfirming = confirmingId === person.id;
 
-                  return (
-                    <div
-                      key={person.id}
-                      role="button"
-                      tabIndex={isReported ? -1 : 0}
-                      onClick={() => !isReported && setSelectedCandidate(person)}
-                      onKeyDown={(e) => {
-                        if (!isReported && (e.key === 'Enter' || e.key === ' ')) {
-                          e.preventDefault();
-                          setSelectedCandidate(person);
-                        }
-                      }}
-                      className={`group text-left bg-white rounded-2xl border overflow-hidden transition-all ${
-                        isReported
-                          ? 'border-slate-200 opacity-60 cursor-default'
-                          : 'border-slate-200 hover:border-rose-300 hover:shadow-lg cursor-pointer'
-                      }`}
-                      id={`match-card-${idx}`}
-                    >
-                      <img
-                        src={person.imageUrl}
-                        alt={person.name}
-                        className={`w-full h-56 object-cover ${isReported ? 'grayscale' : ''}`}
-                        referrerPolicy="no-referrer"
-                      />
-                      <div className="p-4 space-y-2">
-                        <h4 className="text-base font-bold text-slate-800 leading-tight">
-                          {person.name}
-                        </h4>
-                        <p className="text-sm text-slate-600 flex items-start gap-1.5">
-                          <MapPin size={15} className="text-rose-500 shrink-0 mt-0.5" />
-                          <span className="line-clamp-2">{person.hospitalName}</span>
+                return (
+                  <div
+                    key={person.id}
+                    role="button"
+                    tabIndex={isReported ? -1 : 0}
+                    onClick={() => !isReported && setSelectedCandidate(person)}
+                    onKeyDown={(e) => {
+                      if (!isReported && (e.key === 'Enter' || e.key === ' ')) {
+                        e.preventDefault();
+                        setSelectedCandidate(person);
+                      }
+                    }}
+                    className={`group text-left bg-white rounded-2xl border overflow-hidden transition-all ${
+                      isReported
+                        ? 'border-slate-200 opacity-60 cursor-default'
+                        : 'border-slate-200 hover:border-rose-300 hover:shadow-lg cursor-pointer'
+                    }`}
+                    id={`match-card-${idx}`}
+                  >
+                    <img
+                      src={person.imageUrl}
+                      alt={person.name}
+                      className={`w-full h-56 object-cover ${isReported ? 'grayscale' : ''}`}
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="p-4 space-y-2">
+                      <h4 className="text-base font-bold text-slate-800 leading-tight">{person.name}</h4>
+                      <p className="text-sm text-slate-600 flex items-start gap-1.5">
+                        <MapPin size={15} className="text-rose-500 shrink-0 mt-0.5" />
+                        <span className="line-clamp-2">{person.hospitalName}</span>
+                      </p>
+                      {hasCi && (
+                        <p className="text-xs text-slate-500 font-mono flex items-center gap-1.5">
+                          <FileText size={13} className="text-slate-400 shrink-0" />
+                          {person.ci}
                         </p>
-                        {hasCi && (
-                          <p className="text-xs text-slate-500 font-mono flex items-center gap-1.5">
-                            <FileText size={13} className="text-slate-400 shrink-0" />
-                            {person.ci}
-                          </p>
-                        )}
+                      )}
 
-                        {isReported ? (
-                          <p className="flex items-center gap-1.5 text-xs font-bold text-amber-600 pt-1">
-                            <Flag size={13} /> Reportado como falso. ¡Gracias!
-                          </p>
-                        ) : isConfirming ? (
-                          <div className="flex items-center justify-between gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
-                            <span className="text-xs font-semibold text-slate-600">¿Reportar como falso?</span>
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setReportedIds((prev) => [...prev, person.id]);
-                                  setConfirmingId(null);
-                                }}
-                                className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-500 hover:bg-amber-600 text-white transition-all"
-                              >
-                                Sí
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); setConfirmingId(null); }}
-                                className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 transition-all"
-                              >
-                                No
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-between gap-2 pt-1">
-                            <span className="inline-flex items-center gap-1 text-sm font-semibold text-rose-600 group-hover:gap-2 transition-all">
-                              Ver información <ArrowRight size={15} />
-                            </span>
+                      {isReported ? (
+                        <p className="flex items-center gap-1.5 text-xs font-bold text-amber-600 pt-1">
+                          <Flag size={13} /> Reportado como falso. ¡Gracias!
+                        </p>
+                      ) : isConfirming ? (
+                        <div className="flex items-center justify-between gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
+                          <span className="text-xs font-semibold text-slate-600">¿Reportar como falso?</span>
+                          <div className="flex items-center gap-1.5 shrink-0">
                             <button
                               type="button"
-                              onClick={(e) => { e.stopPropagation(); setConfirmingId(person.id); }}
-                              className="p-1.5 rounded-full text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-all shrink-0"
-                              title="Reportar como falso"
-                              aria-label="Reportar como falso"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setReportedIds((prev) => [...prev, person.id]);
+                                setConfirmingId(null);
+                              }}
+                              className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-500 hover:bg-amber-600 text-white transition-all"
                             >
-                              <Flag size={15} />
+                              Sí
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setConfirmingId(null); }}
+                              className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 transition-all"
+                            >
+                              No
                             </button>
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between gap-2 pt-1">
+                          <span className="inline-flex items-center gap-1 text-sm font-semibold text-rose-600 group-hover:gap-2 transition-all">
+                            Ver información <ArrowRight size={15} />
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setConfirmingId(person.id); }}
+                            className="p-1.5 rounded-full text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-all shrink-0"
+                            title="Reportar como falso"
+                            aria-label="Reportar como falso"
+                          >
+                            <Flag size={15} />
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })}
+            </div>
 
             {/* Pagination */}
             {totalPages > 1 && (
