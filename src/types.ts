@@ -14,7 +14,6 @@ export interface FoundPerson {
   imageUrl: string;
   dateFound: string;
   status: 'refugiado' | 'hospitalizado' | 'desconocido' | 'reunificado';
-  esMenor?: boolean;
 }
 
 export interface MatchResult {

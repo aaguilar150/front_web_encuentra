@@ -58,7 +58,7 @@ function toCandidate(person: FoundPerson, index: number): Candidato {
   return {
     person_id: person.id,
     estado: person.status === 'hospitalizado' ? 'encontrada' : 'encontrada',
-    es_menor: person.esMenor ?? false,
+    es_menor: /niño|niña|menor/i.test(person.physicalDescription),
     nombre: person.name,
     apellido: '',
     edad: null,

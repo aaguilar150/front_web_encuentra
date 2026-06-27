@@ -64,8 +64,7 @@ export const INITIAL_FOUND_PERSONS: FoundPerson[] = [
     physicalDescription: "Niño de aprox. 6-7 años, tez clara, ojos marrones, cabello castaño claro liso. Vestía franela roja de superhéroe y shorts de jean. Sabe que se llama Santiago pero desconoce su apellido y nombres de sus padres.",
     imageUrl: "https://images.unsplash.com/photo-1503919545889-aef636e10ad4?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
     dateFound: "2026-06-25T10:00:00Z",
-    status: "refugiado",
-    esMenor: true
+    status: "refugiado"
   },
   {
     id: "usr_c3d4e5f6-1234-4abc-8def-a1b2c3d4e5f6",
@@ -77,8 +76,7 @@ export const INITIAL_FOUND_PERSONS: FoundPerson[] = [
     physicalDescription: "Niña de aprox. 9-10 años, cabello negro largo trenzado, tez morena, ojos negros. Vestía uniforme escolar azul y blanco con mochila rosada. Habla con acento llanero, menciona que viene de Apure.",
     imageUrl: "https://images.unsplash.com/photo-1611601322175-ef8ec8c85f01?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
     dateFound: "2026-06-26T09:30:00Z",
-    status: "hospitalizado",
-    esMenor: true
+    status: "hospitalizado"
   }
 ];
 
