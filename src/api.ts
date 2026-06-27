@@ -225,10 +225,9 @@ export async function reportarEncontrado(input: EncontradoInput): Promise<Result
   const fd = new FormData();
   (await prepareFiles(input.files)).forEach((f) => fd.append('files', f));
   fd.append('es_menor', String(input.esMenor));
-  if (!input.esMenor) {
-    appendIf(fd, 'nombre', input.nombre);
-    appendIf(fd, 'apellido', input.apellido);
-  }
+  // nombre/apellido se envían siempre (también para menores); el back decide qué guardar.
+  appendIf(fd, 'nombre', input.nombre);
+  appendIf(fd, 'apellido', input.apellido);
   appendIf(fd, 'doc_tipo', input.docTipo);
   appendIf(fd, 'doc_numero', input.docNumero);
   appendIf(fd, 'refugio', input.refugio);

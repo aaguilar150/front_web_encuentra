@@ -264,26 +264,27 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
             </button>
           </div>
 
-          {/* Section: Identity (hidden for minors) */}
-          {!isChild && (
-            <fieldset className="space-y-4">
-              <legend className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2.5 flex items-center gap-2">
-                <User size={13} className="text-slate-400" />
-                Datos de la persona
-              </legend>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Nombre" optional value={nombre} onChange={setNombre} placeholder="Ej: Juan" maxLength={80} id="person-name-input" />
-                <Field label="Apellido" optional value={apellido} onChange={setApellido} placeholder="Ej: Gómez" maxLength={80} id="person-lastname-input" />
-              </div>
+          {/* Section: Identity */}
+          <fieldset className="space-y-4">
+            <legend className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2.5 flex items-center gap-2">
+              <User size={13} className="text-slate-400" />
+              Datos de la persona
+            </legend>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Nombre" optional value={nombre} onChange={setNombre} placeholder="Ej: Juan" maxLength={80} id="person-name-input" />
+              <Field label="Apellido" optional value={apellido} onChange={setApellido} placeholder="Ej: Gómez" maxLength={80} id="person-lastname-input" />
+            </div>
 
+            {/* Documento de la persona solo para adultos */}
+            {!isChild && (
               <div className="space-y-1.5">
                 <label htmlFor="person-doc-input" className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
                   Documento de identidad <span className="text-slate-400 font-medium normal-case">(opcional)</span>
                 </label>
                 <DocumentInput tipo={docTipo} numero={docNumero} onTipo={setDocTipo} onNumero={setDocNumero} accent="blue" numeroId="person-doc-input" />
               </div>
-            </fieldset>
-          )}
+            )}
+          </fieldset>
 
           {/* Section: Location & contact */}
           <fieldset className="space-y-4">
