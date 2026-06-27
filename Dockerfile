@@ -3,8 +3,8 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
-ARG VITE_API_URL=https://symtechven.com
-ARG VITE_API_PROXY=https://symtechven.com
+ARG VITE_API_URL=https://symtechven.com/api
+ARG VITE_API_PROXY=https://symtechven.com/api
 ARG VITE_MEDIA_URL=https://symtechven.com
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_API_PROXY=$VITE_API_PROXY
