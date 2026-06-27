@@ -28,10 +28,17 @@ import { INITIAL_FOUND_PERSONS } from './data';
 import SearchMissingForm from './components/SearchMissingForm';
 import ReportFoundForm from './components/ReportFoundForm';
 import ApiIntegrationGuide from './components/ApiIntegrationGuide';
+import OnboardingModal from './components/OnboardingModal';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'buscar' | 'reportar' | 'api'>('reportar');
   const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('ven_onboarded'));
+
+  const closeOnboarding = () => {
+    localStorage.setItem('ven_onboarded', '1');
+    setShowOnboarding(false);
+  };
   const [foundPersons, setFoundPersons] = useState<FoundPerson[]>([]);
   const [lastUpdated, setLastUpdated] = useState<string>(() => localStorage.getItem('ven_disaster_last_updated') || new Date().toISOString());
   const [now, setNow] = useState(() => Date.now());
@@ -134,6 +141,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col font-sans overflow-x-hidden" id="app-root-container">
+      {showOnboarding && <OnboardingModal onClose={closeOnboarding} />}
+
       {/* Patriotic Subtle Accent Bar representing the Venezuelan Flag colors */}
       <div className="h-1.5 w-full flex">
         <div className="h-full w-1/3 bg-amber-400"></div>
