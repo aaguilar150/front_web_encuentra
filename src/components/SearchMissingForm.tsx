@@ -4,19 +4,24 @@
  */
 
 import React, { useState, useRef } from 'react';
-import { Search, User, Shield, Camera, Upload, AlertCircle, FileText, Heart, MapPin, Phone, Eye, ArrowRight, RefreshCw, CheckCircle2, HelpCircle, X } from 'lucide-react';
+import { Search, User, Shield, Camera, Upload, AlertCircle, FileText, Heart, MapPin, Phone, Eye, ArrowRight, RefreshCw, CheckCircle2, HelpCircle, X, Flag } from 'lucide-react';
 import { FoundPerson, MatchResult } from '../types';
+import { buscarPersona } from '../api';
 
 interface SearchMissingFormProps {
-  foundPersons: FoundPerson[];
   onTriggerReunion: (person: FoundPerson) => void;
 }
 
-export default function SearchMissingForm({ foundPersons, onTriggerReunion }: SearchMissingFormProps) {
+export default function SearchMissingForm({ onTriggerReunion }: SearchMissingFormProps) {
+  // ponytail: capacity knob — set to 1 for single-photo mode, raise to allow more
+  const MAX_IMAGES = 5;
+
+  type Photo = { file: File; url: string };
+
   const [showHelp, setShowHelp] = useState(false);
-  const [requesterCi, setRequesterCi] = useState('');
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [qNombre, setQNombre] = useState('');
+  const [qDocNumero, setQDocNumero] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [analysisStep, setAnalysisStep] = useState('');
@@ -25,111 +30,87 @@ export default function SearchMissingForm({ foundPersons, onTriggerReunion }: Se
   const [error, setError] = useState<string | null>(null);
   const [isSuccessReunion, setIsSuccessReunion] = useState(false);
   const [matchRequestedPerson, setMatchRequestedPerson] = useState<FoundPerson | null>(null);
+  const [reportedIds, setReportedIds] = useState<string[]>([]);
+  const [page, setPage] = useState(0);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const PAGE_SIZE = 6;
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Pre-configured demo images representing sample missing people
-  const sampleMissingPeople = [
-    {
-      name: "Juan Carlos Pérez",
-      url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
-      hint: "Foto de prueba del sistema"
-    }
-  ];
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setSelectedImage(reader.result as string);
-        setError(null);
-      };
-      reader.readAsDataURL(file);
-    }
+  const addFiles = (files: FileList | File[]) => {
+    const imgs = Array.from(files).filter((f) => f.type.startsWith('image/'));
+    setPhotos((prev) => {
+      const room = MAX_IMAGES - prev.length;
+      return [...prev, ...imgs.slice(0, room).map((file) => ({ file, url: URL.createObjectURL(file) }))];
+    });
+    setError(null);
   };
 
-  const handleSelectSample = (url: string) => {
-    setSelectedImage(url);
-    setImageFile(null);
-    setError(null);
+  const removePhoto = (idx: number) => setPhotos((prev) => prev.filter((_, i) => i !== idx));
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) addFiles(e.target.files);
+    e.target.value = ''; // allow re-selecting the same file
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    const file = e.dataTransfer.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setSelectedImage(reader.result as string);
-        setError(null);
-      };
-      reader.readAsDataURL(file);
-    }
+    if (e.dataTransfer.files) addFiles(e.dataTransfer.files);
   };
 
   const startAnalysis = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedImage) {
-      setError('Por favor, selecciona o sube una imagen de la persona que buscas.');
+    if (photos.length === 0) {
+      setError('Por favor, selecciona o sube al menos una foto de la persona que buscas.');
       return;
     }
 
     setError(null);
     setIsAnalyzing(true);
-    setAnalysisProgress(5);
-    setAnalysisStep('Iniciando carga de imagen...');
+    setAnalysisProgress(0);
+    setAnalysisStep('Subiendo fotos...');
+    setPage(0);
 
-    // Simulate DeepFace & ChromaDB pipeline
-    const steps = [
-      { p: 15, msg: 'Normalizando dimensiones de la imagen...' },
-      { p: 35, msg: 'Ejecutando DeepFace.represent(model_name="Facenet")...' },
-      { p: 60, msg: 'Extrayendo vector de características faciales (embedding)...' },
-      { p: 80, msg: 'Consultando base de datos ChromaDB por cercanía de coseno...' },
-      { p: 95, msg: 'Filtrando resultados por prioridad de semejanza...' },
-      { p: 100, msg: 'Búsqueda completada.' }
-    ];
+    // Loader paced to ~10s: climbs smoothly toward 95% and waits there until the
+    // backend responds; on response it snaps straight to 100% (early or late).
+    const TOTAL_MS = 10000;
+    const start = Date.now();
+    let done = false;
 
-    let currentStepIdx = 0;
-    const interval = setInterval(() => {
-      if (currentStepIdx < steps.length) {
-        setAnalysisProgress(steps[currentStepIdx].p);
-        setAnalysisStep(steps[currentStepIdx].msg);
-        currentStepIdx++;
-      } else {
-        clearInterval(interval);
-        // Compute mockup similarity scores matching the actual elements in foundPersons
-        const results: MatchResult[] = foundPersons.map((person) => {
-          // If the uploaded image belongs to the same person conceptually, give it a very high score
-          let distance = 0.5 + Math.random() * 0.9; // default random distance
+    const tick = setInterval(() => {
+      if (done) return;
+      const pct = Math.min(95, ((Date.now() - start) / TOTAL_MS) * 100);
+      setAnalysisProgress(Math.round(pct));
+      setAnalysisStep(
+        pct < 20 ? 'Normalizando imagen...' :
+        pct < 45 ? 'Extrayendo rasgos faciales...' :
+        pct < 70 ? 'Consultando base de datos...' :
+        'Comparando coincidencias...'
+      );
+    }, 100);
 
-          if (selectedImage.includes('photo-1500648767791') && person.name.includes('Juan Carlos')) {
-            distance = 0.12; // Perfect match
-          } else if (selectedImage.includes('photo-1494790108377') && person.name.includes('María Alejandra')) {
-            distance = 0.18; // Perfect match
-          } else if (selectedImage.includes('photo-1534528741775') && person.id.includes('77a281fb')) {
-            distance = 0.45; // Partial match
-          }
-
-          const similarity = Math.max(0, Math.min(100, Math.round((1.5 - distance) * 100)));
-
-          return {
-            foundPerson: person,
-            similarity,
-            distance,
-            isCertain: distance < 1
-          };
-        });
-
-        // Sort by priority of similarity (distance ascending, score descending)
-        results.sort((a, b) => a.distance - b.distance);
-
-        setSearchResults(results);
+    buscarPersona({
+      files: photos.map((p) => p.file),
+      nombre: qNombre,
+      docNumero: qDocNumero,
+    })
+      .then((results) => {
+        done = true;
+        clearInterval(tick);
+        setAnalysisProgress(100);
+        setAnalysisStep('Búsqueda completada.');
+        setTimeout(() => {
+          setSearchResults(results);
+          setIsAnalyzing(false);
+        }, 400);
+      })
+      .catch((err) => {
+        done = true;
+        clearInterval(tick);
         setIsAnalyzing(false);
-      }
-    }, 700);
+        setAnalysisProgress(0);
+        setError(err instanceof Error ? err.message : 'No se pudo completar la búsqueda. Intenta de nuevo.');
+      });
   };
 
   const handleRequestReunion = (person: FoundPerson) => {
@@ -139,74 +120,77 @@ export default function SearchMissingForm({ foundPersons, onTriggerReunion }: Se
   };
 
   const handleResetSearch = () => {
-    setSelectedImage(null);
-    setImageFile(null);
+    setPhotos([]);
     setSearchResults(null);
     setSelectedCandidate(null);
     setIsSuccessReunion(false);
     setMatchRequestedPerson(null);
+    setReportedIds([]);
+    setPage(0);
   };
 
+  const totalPages = searchResults ? Math.ceil(searchResults.length / PAGE_SIZE) : 0;
+  const pageItems = searchResults ? searchResults.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE) : [];
+
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6" id="search-missing-view">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 mb-6 border-b border-slate-100">
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-6" id="search-missing-view">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 mb-4 border-b border-slate-100">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-rose-50 text-rose-600 rounded-xl">
+          <div className="p-2.5 bg-rose-50 text-rose-600 rounded-xl shrink-0">
             <Search size={22} />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-slate-800">Buscar Familiar</h2>
-            <p className="text-sm text-slate-500">Sube una foto para buscar coincidencias mediante reconocimiento facial.</p>
+            <h2 className="text-lg font-bold text-slate-800 leading-tight">Buscar Familiar</h2>
+            <p className="text-sm text-slate-500 leading-snug">Sube una foto y busca coincidencias por reconocimiento facial.</p>
           </div>
         </div>
         <button
           type="button"
-          onClick={() => setShowHelp(!showHelp)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border transition-all ${showHelp
-              ? 'bg-rose-500 text-white border-rose-500 shadow-sm'
-              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-            }`}
+          onClick={() => setShowHelp(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 transition-all"
           id="btn-toggle-help"
         >
           <HelpCircle size={15} />
-          {showHelp ? 'CERRAR PROCEDIMIENTO' : '¿CÓMO FUNCIONA?'}
+          ¿CÓMO FUNCIONA?
         </button>
       </div>
 
       {showHelp && (
-        <div className="mb-6 bg-rose-50/50 border border-rose-100 rounded-2xl p-5 space-y-4 text-slate-700 transition-all" id="help-procedure-container">
-          <h3 className="text-sm font-bold text-rose-900 uppercase tracking-wide flex items-center gap-2">
-            <HelpCircle size={16} className="text-rose-500" />
-            Procedimiento Oficial de Búsqueda y Reencuentro
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
-            <div className="bg-white p-3.5 rounded-xl border border-rose-100/40 shadow-sm space-y-1.5">
-              <span className="inline-flex w-5 h-5 items-center justify-center rounded-full bg-rose-100 text-rose-700 text-[10px] font-black">1</span>
-              <h4 className="text-xs font-bold text-slate-800">Subir Fotografía</h4>
-              <p className="text-[11px] text-slate-500 leading-normal">
-                Sube o selecciona una foto del rostro de la persona que buscas. El algoritmo requiere visibilidad frontal clara.
-              </p>
-            </div>
-            <div className="bg-white p-3.5 rounded-xl border border-rose-100/40 shadow-sm space-y-1.5">
-              <span className="inline-flex w-5 h-5 items-center justify-center rounded-full bg-rose-100 text-rose-700 text-[10px] font-black">2</span>
-              <h4 className="text-xs font-bold text-slate-800">Cotejo Facial AI</h4>
-              <p className="text-[11px] text-slate-500 leading-normal">
-                El sistema extrae un vector de características (embeddings) y realiza una comparación de distancia coseno en la base de datos ChromaDB.
-              </p>
-            </div>
-            <div className="bg-white p-3.5 rounded-xl border border-rose-100/40 shadow-sm space-y-1.5">
-              <span className="inline-flex w-5 h-5 items-center justify-center rounded-full bg-rose-100 text-rose-700 text-[10px] font-black">3</span>
-              <h4 className="text-xs font-bold text-slate-800">Ver Coincidencias</h4>
-              <p className="text-[11px] text-slate-500 leading-normal">
-                Se ordenarán los resultados por semejanza facial. Podrás ver la descripción física de la persona encontrada y el centro de refugio.
-              </p>
-            </div>
-            <div className="bg-white p-3.5 rounded-xl border border-rose-100/40 shadow-sm space-y-1.5">
-              <span className="inline-flex w-5 h-5 items-center justify-center rounded-full bg-rose-100 text-rose-700 text-[10px] font-black">4</span>
-              <h4 className="text-xs font-bold text-slate-800">Contacto Seguro</h4>
-              <p className="text-[11px] text-slate-500 leading-normal">
-                Al encontrar una coincidencia cierta, solicita el reencuentro. Preséntate con tu identificación oficial en el hospital o refugio para completar el enlace.
-              </p>
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+          onClick={() => setShowHelp(false)}
+          id="help-procedure-modal"
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl relative p-5 sm:p-6 max-h-[90vh] overflow-y-auto animate-[fadeIn_0.2s_ease-out]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setShowHelp(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 p-1.5 rounded-full transition-all"
+            >
+              <X size={18} />
+            </button>
+            <h3 className="text-base font-bold text-rose-900 flex items-center gap-2 pr-8 mb-5">
+              <HelpCircle size={18} className="text-rose-500 shrink-0" />
+              Procedimiento de Búsqueda y Reencuentro
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { n: 1, t: 'Subir Fotografía', d: 'Sube una foto del rostro de la persona que buscas. Se requiere visibilidad frontal clara.' },
+                { n: 2, t: 'Cotejo Facial AI', d: 'El sistema extrae un vector facial (embedding) y lo compara por distancia coseno en ChromaDB.' },
+                { n: 3, t: 'Ver Coincidencias', d: 'Los resultados se ordenan por semejanza. Verás la descripción física y el centro de refugio.' },
+                { n: 4, t: 'Contacto Seguro', d: 'Ante una coincidencia cierta, solicita el reencuentro y preséntate con tu identificación oficial.' },
+              ].map((s) => (
+                <div key={s.n} className="bg-rose-50/50 p-4 rounded-xl border border-rose-100 flex gap-3">
+                  <span className="inline-flex w-6 h-6 items-center justify-center rounded-full bg-rose-500 text-white text-xs font-black shrink-0">{s.n}</span>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-bold text-slate-800">{s.t}</h4>
+                    <p className="text-xs text-slate-500 leading-snug">{s.d}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -236,9 +220,9 @@ export default function SearchMissingForm({ foundPersons, onTriggerReunion }: Se
           </button>
         </div>
       ) : !searchResults ? (
-        <form onSubmit={startAnalysis} className="space-y-6">
+        <form onSubmit={startAnalysis} className="space-y-5">
           {error && (
-            <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-start gap-2.5 text-sm" id="search-error">
+            <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-start gap-2.5 text-sm" id="search-error">
               <AlertCircle size={18} className="mt-0.5 shrink-0 text-red-500" />
               <span>{error}</span>
             </div>
@@ -246,155 +230,130 @@ export default function SearchMissingForm({ foundPersons, onTriggerReunion }: Se
 
           {/* Step 1: Image Selection */}
           <div className="space-y-3">
-            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-              <Camera size={14} className="text-rose-600" />
-              Fotografía de la Persona
-            </label>
+            <div className="flex items-center justify-between gap-2">
+              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                <Camera size={14} className="text-rose-600" />
+                Fotos de la persona
+              </label>
+              {photos.length > 0 && (
+                <span className="text-[11px] font-semibold text-slate-400">{photos.length}/{MAX_IMAGES}</span>
+              )}
+            </div>
 
-            {/* Drag & Drop Area */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImageUpload}
+              accept="image/*"
+              multiple={MAX_IMAGES > 1}
+              className="hidden"
+            />
+
+            {/* Drag & Drop / thumbnails grid */}
             <div
               onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-              onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); }}
-              onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); }}
-              onDrop={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleDrop(e);
-              }}
-              onClick={() => !isAnalyzing && fileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${selectedImage
-                  ? 'border-rose-600 bg-rose-50/10'
-                  : 'border-rose-600 hover:border-rose-700 bg-rose-50/40 hover:bg-rose-50'
-                } ${isAnalyzing ? 'opacity-50 pointer-events-none' : ''}`}
+              onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleDrop(e); }}
+              className={`border-2 border-dashed rounded-xl p-4 transition-all ${
+                photos.length ? 'border-rose-300 bg-rose-50/20' : 'border-rose-600 bg-rose-50/40'
+              } ${isAnalyzing ? 'opacity-60 pointer-events-none' : ''}`}
               id="image-dropzone"
             >
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleImageUpload}
-                accept="image/*"
-                className="hidden"
-              />
-
-              {selectedImage ? (
-                <div className="relative inline-block group">
-                  <img
-                    src={selectedImage}
-                    alt="Búsqueda"
-                    className="w-40 h-40 object-cover rounded-xl border border-slate-100 shadow-sm mx-auto"
-                    referrerPolicy="no-referrer"
-                  />
-                  
-                  {/* Remove Image Button (X) */}
-                  {!isAnalyzing && (
+              {photos.length === 0 ? (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full text-center py-5 cursor-pointer"
+                >
+                  <div className="w-11 h-11 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center mx-auto mb-2">
+                    <Upload size={20} />
+                  </div>
+                  <p className="text-sm font-semibold text-slate-700">Haz clic o arrastra las fotos aquí</p>
+                  <p className="text-xs text-slate-400 mt-0.5">JPG o PNG — rostro frontal claro{MAX_IMAGES > 1 ? ` (hasta ${MAX_IMAGES})` : ''}</p>
+                </button>
+              ) : (
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+                  {photos.map((p, idx) => (
+                    <div key={idx} className="relative aspect-square group">
+                      <img
+                        src={p.url}
+                        alt={`Foto ${idx + 1}`}
+                        className="w-full h-full object-cover rounded-lg border border-slate-200 shadow-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removePhoto(idx)}
+                        className="absolute -top-1.5 -right-1.5 bg-white text-slate-500 p-1 rounded-full shadow-md border border-slate-200 hover:text-rose-600 hover:border-rose-200 transition-all z-10"
+                        aria-label="Quitar foto"
+                      >
+                        <X size={13} strokeWidth={3} />
+                      </button>
+                    </div>
+                  ))}
+                  {photos.length < MAX_IMAGES && (
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedImage(null);
-                        setImageFile(null);
-                        setError(null);
-                      }}
-                      className="absolute -top-2 -right-2 bg-white text-slate-500 p-1.5 rounded-full shadow-md border border-slate-200 hover:text-rose-600 hover:border-rose-200 transition-all z-10"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="aspect-square rounded-lg border-2 border-dashed border-rose-300 text-rose-500 hover:border-rose-500 hover:bg-rose-50 flex flex-col items-center justify-center gap-1 transition-all"
                     >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                      <Upload size={18} />
+                      <span className="text-[10px] font-bold">Agregar</span>
                     </button>
                   )}
-                  {/* Facial Scanner Animation effect during search */}
-                  {isAnalyzing && (
-                    <div className="absolute inset-0 bg-rose-500/10 overflow-hidden rounded-xl">
-                      <div className="absolute left-0 right-0 h-1 bg-rose-500 shadow-lg shadow-rose-400/50 animate-[bounce_1.5s_infinite]"></div>
-                    </div>
-                  )}
-                  <span className="block mt-2 text-xs font-semibold text-rose-600 group-hover:underline">
-                    Cambiar imagen
-                  </span>
-                  {sampleMissingPeople.some(s => s.url === selectedImage) && (
-                    <span className="block mt-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                      Foto de prueba seleccionada
-                    </span>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-1 py-4">
-                  <div className="w-10 h-10 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center mx-auto mb-2">
-                    <Upload size={18} />
-                  </div>
-                  <p className="text-sm font-semibold text-slate-700">Haz clic para subir la foto</p>
-                  <p className="text-xs text-slate-400">Formatos JPG o PNG (rostro frontal claro)</p>
                 </div>
               )}
             </div>
 
-            {/* Quick Demo Samples Selector */}
-            <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-2 text-center">O usa una foto de prueba:</p>
-              <div className="grid grid-cols-1 max-w-sm mx-auto">
-                {sampleMissingPeople.map((sample, idx) => (
-                  <div
-                    key={idx}
-                    className={`flex items-center justify-between p-2 rounded-lg border text-xs transition-all ${
-                      selectedImage === sample.url
-                        ? 'border-rose-400 bg-rose-50/40 font-semibold text-rose-700'
-                        : 'border-slate-200 bg-white hover:border-slate-300 text-slate-600 cursor-pointer'
-                    } ${isAnalyzing ? 'opacity-50 pointer-events-none' : ''}`}
-                    onClick={() => {
-                      if (!isAnalyzing && selectedImage !== sample.url) {
-                        handleSelectSample(sample.url);
-                      }
-                    }}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <img src={sample.url} alt="Muestra" className="w-8 h-8 rounded-full object-cover shrink-0" referrerPolicy="no-referrer" />
-                      <div className="truncate text-left">
-                        <p className="font-semibold truncate">{sample.name}</p>
-                        <p className={`text-[9px] truncate ${selectedImage === sample.url ? 'text-rose-500 font-bold' : 'text-slate-400'}`}>
-                          {selectedImage === sample.url ? "¡Foto de prueba seleccionada!" : sample.hint}
-                        </p>
-                      </div>
-                    </div>
-                    {selectedImage === sample.url && !isAnalyzing && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedImage(null);
-                          setImageFile(null);
-                          setError(null);
-                        }}
-                        className="p-1.5 rounded-full hover:bg-rose-100 text-rose-500 transition-all shrink-0 ml-2 shadow-sm border border-rose-200 bg-white"
-                      >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-                      </button>
-                    )}
-                  </div>
-                ))}
+            {/* Optional identity hints — al menos uno ayuda a afinar la búsqueda */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                  Nombre <span className="text-slate-400 font-medium normal-case">(opcional)</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Nombre de quien buscas"
+                  value={qNombre}
+                  onChange={(e) => setQNombre(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-white border border-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 rounded-xl text-slate-800 text-sm placeholder-slate-400 outline-none transition-all font-medium shadow-sm"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                  Cédula <span className="text-slate-400 font-medium normal-case">(opcional)</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ej: 12345678"
+                  value={qDocNumero}
+                  onChange={(e) => setQDocNumero(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-white border border-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 rounded-xl text-slate-800 text-sm placeholder-slate-400 outline-none transition-all font-medium shadow-sm"
+                />
               </div>
             </div>
           </div>
 
           {/* Action Trigger / Scanning Simulation overlay */}
           {isAnalyzing ? (
-            <div className="space-y-3 bg-slate-50 border border-slate-100 rounded-xl p-4 text-center animate-pulse" id="analysis-status">
-              <div className="flex justify-between text-xs text-slate-600 font-medium">
-                <span>{analysisStep}</span>
-                <span>{analysisProgress}%</span>
+            <div className="space-y-2.5 bg-slate-50 border border-slate-100 rounded-xl p-4" id="analysis-status">
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-slate-600 font-medium truncate">{analysisStep}</span>
+                <span className="text-rose-600 font-bold tabular-nums shrink-0">{analysisProgress}%</span>
               </div>
-              <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+              <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-rose-500 transition-all duration-300"
+                  className="h-full bg-rose-500 rounded-full transition-[width] duration-200 ease-linear"
                   style={{ width: `${analysisProgress}%` }}
                 ></div>
               </div>
-              <p className="text-[10px] text-slate-400 font-mono">EJECUTANDO PIPELINE DE CHROMA VECTORDATER - FACENET DISTANCE COMPARATOR</p>
+              <p className="text-[11px] text-slate-400">Reconocimiento facial en proceso, no cierres esta ventana.</p>
             </div>
           ) : (
             <button
               type="submit"
-              className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
+              className="w-full py-3.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-base rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
               id="btn-trigger-search"
             >
-              <Search size={18} />
+              <Search size={20} />
               Iniciar Búsqueda
             </button>
           )}
@@ -419,111 +378,185 @@ export default function SearchMissingForm({ foundPersons, onTriggerReunion }: Se
 
           {/* List of matches */}
           <div className="space-y-3">
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Resultados Ordenados por Grado de Semejanza:</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[420px] overflow-y-auto pr-1">
-                {searchResults.map((result, idx) => {
-                  const isMatchPerfect = result.distance < 0.3;
-                  const isMatchHigh = result.distance < 0.5 && result.distance >= 0.3;
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Posibles coincidencias — toca una para ver sus datos:</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {pageItems.map((result, idx) => {
+                  const person = result.foundPerson;
+                  const hasCi = !!person.ci && !/desconocido|no aplica/i.test(person.ci);
+                  const isReported = reportedIds.includes(person.id);
+                  const isConfirming = confirmingId === person.id;
 
                   return (
                     <div
-                      key={result.foundPerson.id}
-                      onClick={() => setSelectedCandidate(result.foundPerson)}
-                      className={`p-3 sm:p-4 rounded-xl border-2 text-left cursor-pointer transition-all flex gap-3 sm:gap-4 ${
-                          selectedCandidate?.id === result.foundPerson.id
-                            ? 'border-rose-500 bg-rose-50 ring-2 ring-rose-200 shadow-sm'
-                            : isMatchPerfect
-                              ? 'bg-emerald-50/60 border-emerald-400 hover:bg-emerald-50 hover:border-emerald-500 hover:shadow-md shadow-sm'
-                              : isMatchHigh
-                                ? 'bg-amber-50/60 border-amber-400 hover:bg-amber-50 hover:border-amber-500 hover:shadow-md shadow-sm'
-                                : 'bg-slate-50 border-slate-300 hover:bg-slate-100 hover:border-slate-400 shadow-sm'
-                        }`}
+                      key={person.id}
+                      role="button"
+                      tabIndex={isReported ? -1 : 0}
+                      onClick={() => !isReported && setSelectedCandidate(person)}
+                      onKeyDown={(e) => {
+                        if (!isReported && (e.key === 'Enter' || e.key === ' ')) {
+                          e.preventDefault();
+                          setSelectedCandidate(person);
+                        }
+                      }}
+                      className={`group text-left bg-white rounded-2xl border overflow-hidden transition-all ${
+                        isReported
+                          ? 'border-slate-200 opacity-60 cursor-default'
+                          : 'border-slate-200 hover:border-rose-300 hover:shadow-lg cursor-pointer'
+                      }`}
                       id={`match-card-${idx}`}
                     >
                       <img
-                        src={result.foundPerson.imageUrl}
-                        alt="Encontrado"
-                        className="w-16 h-16 rounded-xl object-cover shrink-0 border border-slate-200/60 shadow-sm"
+                        src={person.imageUrl}
+                        alt={person.name}
+                        className={`w-full h-56 object-cover ${isReported ? 'grayscale' : ''}`}
                         referrerPolicy="no-referrer"
                       />
-                      <div className="flex-1 min-w-0 flex flex-col justify-center">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2">
-                          <h4 className="text-sm font-bold text-slate-800 leading-tight line-clamp-2 pr-1">
-                            {result.foundPerson.name}
-                          </h4>
-                          <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-lg text-sm font-black uppercase tracking-wider shrink-0 border shadow-sm ${
-                              isMatchPerfect
-                                ? 'bg-emerald-500 text-white border-emerald-600 shadow-emerald-500/20'
-                                : isMatchHigh
-                                  ? 'bg-amber-400 text-amber-900 border-amber-500 shadow-amber-400/20'
-                                  : 'bg-slate-100 text-slate-700 border-slate-200'
-                            }`}>
-                            {result.similarity}%
-                          </span>
-                        </div>
-                        <div className="mt-2.5 text-center">
-                           <span className="text-xs font-bold text-rose-600 hover:text-rose-700 underline underline-offset-2">Clic para verme &rarr;</span>
-                        </div>
+                      <div className="p-4 space-y-2">
+                        <h4 className="text-base font-bold text-slate-800 leading-tight">
+                          {person.name}
+                        </h4>
+                        <p className="text-sm text-slate-600 flex items-start gap-1.5">
+                          <MapPin size={15} className="text-rose-500 shrink-0 mt-0.5" />
+                          <span className="line-clamp-2">{person.hospitalName}</span>
+                        </p>
+                        {hasCi && (
+                          <p className="text-xs text-slate-500 font-mono flex items-center gap-1.5">
+                            <FileText size={13} className="text-slate-400 shrink-0" />
+                            {person.ci}
+                          </p>
+                        )}
+
+                        {isReported ? (
+                          <p className="flex items-center gap-1.5 text-xs font-bold text-amber-600 pt-1">
+                            <Flag size={13} /> Reportado como falso. ¡Gracias!
+                          </p>
+                        ) : isConfirming ? (
+                          <div className="flex items-center justify-between gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
+                            <span className="text-xs font-semibold text-slate-600">¿Reportar como falso?</span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setReportedIds((prev) => [...prev, person.id]);
+                                  setConfirmingId(null);
+                                }}
+                                className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-500 hover:bg-amber-600 text-white transition-all"
+                              >
+                                Sí
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setConfirmingId(null); }}
+                                className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 transition-all"
+                              >
+                                No
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between gap-2 pt-1">
+                            <span className="inline-flex items-center gap-1 text-sm font-semibold text-rose-600 group-hover:gap-2 transition-all">
+                              Ver información <ArrowRight size={15} />
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setConfirmingId(person.id); }}
+                              className="p-1.5 rounded-full text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-all shrink-0"
+                              title="Reportar como falso"
+                              aria-label="Reportar como falso"
+                            >
+                              <Flag size={15} />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
                 })}
               </div>
-            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  disabled={page === 0}
+                  className="inline-flex items-center gap-1 px-3.5 py-2 rounded-lg text-sm font-semibold border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  <ArrowRight size={15} className="rotate-180" /> Anterior
+                </button>
+                <span className="text-xs font-semibold text-slate-500 tabular-nums">Página {page + 1} de {totalPages}</span>
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                  disabled={page >= totalPages - 1}
+                  className="inline-flex items-center gap-1 px-3.5 py-2 rounded-lg text-sm font-semibold border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  Siguiente <ArrowRight size={15} />
+                </button>
+              </div>
+            )}
           </div>
+        </div>
       )}
 
       {/* Candidate Details Modal */}
       {selectedCandidate && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm transition-all" onClick={() => setSelectedCandidate(null)}>
-          <div 
-            className="bg-white rounded-2xl p-6 shadow-2xl w-full max-w-md relative flex flex-col max-h-[90vh] overflow-y-auto animate-[fadeIn_0.2s_ease-out]"
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md relative flex flex-col max-h-[90vh] overflow-hidden animate-[fadeIn_0.2s_ease-out]"
             onClick={(e) => e.stopPropagation()}
           >
-            <button 
-              onClick={() => setSelectedCandidate(null)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 p-1.5 rounded-full transition-all"
-            >
-              <X size={18} />
-            </button>
-            <div className="space-y-4" id="candidate-detail-pane">
-              <div className="text-center pb-4 border-b border-slate-200/60 pt-2">
-                <img
-                  src={selectedCandidate.imageUrl}
-                  alt={selectedCandidate.name}
-                  className="w-full h-72 object-cover rounded-xl shadow-md mx-auto mb-4"
-                  referrerPolicy="no-referrer"
-                />
-                <h4 className="font-bold text-slate-800 text-xl">{selectedCandidate.name}</h4>
-                <p className="text-sm text-slate-500 font-mono mt-1">Cédula: {selectedCandidate.ci}</p>
+            {/* Fixed image header — never scrolls out of view */}
+            <div className="relative shrink-0">
+              <img
+                src={selectedCandidate.imageUrl}
+                alt={selectedCandidate.name}
+                className="w-full h-64 sm:h-72 object-cover"
+                referrerPolicy="no-referrer"
+              />
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-4 pt-10">
+                <h4 className="font-bold text-white text-xl leading-tight">{selectedCandidate.name}</h4>
+                {!!selectedCandidate.ci && !/desconocido|no aplica/i.test(selectedCandidate.ci) && (
+                  <p className="text-xs text-white/80 font-mono mt-0.5">Cédula: {selectedCandidate.ci}</p>
+                )}
+              </div>
+              <button
+                onClick={() => setSelectedCandidate(null)}
+                className="absolute top-3 right-3 text-white bg-black/30 hover:bg-black/50 p-1.5 rounded-full transition-all backdrop-blur-sm"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Scrollable content below the image */}
+            <div className="overflow-y-auto p-5 sm:p-6 space-y-4 text-sm" id="candidate-detail-pane">
+              <div>
+                <span className="font-bold text-slate-700 block mb-1">Ubicación Actual:</span>
+                <p className="text-slate-600 flex items-start gap-1.5">
+                  <MapPin size={16} className="text-rose-500 shrink-0 mt-0.5" />
+                  <span><strong>{selectedCandidate.hospitalName}</strong> - {selectedCandidate.locationAddress}</span>
+                </p>
               </div>
 
-              <div className="space-y-4 text-sm">
-                <div>
-                  <span className="font-bold text-slate-700 block mb-1">Ubicación Actual:</span>
-                  <p className="text-slate-600 flex items-start gap-1.5">
-                    <MapPin size={16} className="text-rose-500 shrink-0 mt-0.5" />
-                    <span><strong>{selectedCandidate.hospitalName}</strong> - {selectedCandidate.locationAddress}</span>
-                  </p>
-                </div>
-
-                <div>
-                  <span className="font-bold text-slate-700 block mb-1">Descripción Física y Estado:</span>
-                  <p className="text-slate-600 leading-relaxed bg-slate-50 border border-slate-200/50 rounded-xl p-3 font-sans italic text-xs">
-                    "{selectedCandidate.physicalDescription}"
-                  </p>
-                </div>
-
-                <div>
-                  <span className="font-bold text-slate-700 block mb-1">Contacto de Enlace o Rescate:</span>
-                  <p className="text-slate-700 flex items-center gap-2 font-mono bg-slate-50 px-3 py-2 rounded-lg border border-slate-200/50">
-                    <Phone size={14} className="text-slate-400 shrink-0" />
-                    {selectedCandidate.contactPhone}
-                  </p>
-                </div>
+              <div>
+                <span className="font-bold text-slate-700 block mb-1">Descripción Física y Estado:</span>
+                <p className="text-slate-600 leading-relaxed bg-slate-50 border border-slate-200/50 rounded-xl p-3 font-sans italic text-xs">
+                  "{selectedCandidate.physicalDescription}"
+                </p>
               </div>
 
-              <div className="pt-5 mt-2 border-t border-slate-200/60 space-y-3">
+              <div>
+                <span className="font-bold text-slate-700 block mb-1">Contacto de Enlace o Rescate:</span>
+                <p className="text-slate-700 flex items-center gap-2 font-mono bg-slate-50 px-3 py-2 rounded-lg border border-slate-200/50">
+                  <Phone size={14} className="text-slate-400 shrink-0" />
+                  {selectedCandidate.contactPhone}
+                </p>
+              </div>
+
+              <div className="pt-4 border-t border-slate-200/60">
                 <button
                   onClick={() => {
                     handleRequestReunion(selectedCandidate);

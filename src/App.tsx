@@ -30,9 +30,11 @@ import ReportFoundForm from './components/ReportFoundForm';
 import ApiIntegrationGuide from './components/ApiIntegrationGuide';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'buscar' | 'reportar' | 'api'>('buscar');
+  const [activeTab, setActiveTab] = useState<'buscar' | 'reportar' | 'api'>('reportar');
   const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
   const [foundPersons, setFoundPersons] = useState<FoundPerson[]>([]);
+  const [lastUpdated, setLastUpdated] = useState<string>(() => localStorage.getItem('ven_disaster_last_updated') || new Date().toISOString());
+  const [now, setNow] = useState(() => Date.now());
   const [stats, setStats] = useState({
     totalFound: 142,
     totalMissingSearched: 485,
@@ -64,11 +66,32 @@ export default function App() {
     }
   }, []);
 
+  // Tick "now" every 30s so the relative "última actualización" stays fresh
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(t);
+  }, []);
+
+  // Format elapsed time as "hace 30 seg" / "hace 20 min" / "hace 1h 20min"
+  const formatAgo = (iso: string) => {
+    const s = Math.max(0, Math.floor((now - new Date(iso).getTime()) / 1000));
+    if (s < 60) return `hace ${s} seg`;
+    const m = Math.floor(s / 60);
+    if (m < 60) return `hace ${m} min`;
+    const h = Math.floor(m / 60);
+    const rm = m % 60;
+    return rm ? `hace ${h}h ${rm}min` : `hace ${h}h`;
+  };
+
   // Save to localStorage whenever foundPersons updates
   const savePersons = (updatedList: FoundPerson[]) => {
     setFoundPersons(updatedList);
     localStorage.setItem('ven_disaster_found_persons', JSON.stringify(updatedList));
-    
+
+    const now = new Date().toISOString();
+    setLastUpdated(now);
+    localStorage.setItem('ven_disaster_last_updated', now);
+
     // Update total found stat dynamically
     const newStats = {
       ...stats,
@@ -149,40 +172,43 @@ export default function App() {
       </header>
 
       {/* Main Container Content */}
-      <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5">
         {/* Main Action Buttons */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8 max-w-4xl mx-auto px-2">
+        <div className="flex mb-5 max-w-4xl mx-auto rounded-xl border-2 border-slate-200 overflow-hidden shadow-sm" role="tablist">
           <button
             onClick={() => setActiveTab('buscar')}
-            className={`flex flex-col sm:flex-row items-center justify-center gap-2 p-3 rounded-xl text-sm sm:text-base font-bold transition-all duration-300 ${
+            role="tab"
+            aria-selected={activeTab === 'buscar'}
+            className={`flex-1 basis-1/2 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 px-2 py-3 text-xs sm:text-base font-bold transition-all duration-300 ${
               activeTab === 'buscar'
-                ? 'bg-rose-600 text-white ring-2 ring-offset-2 ring-offset-[#e2e8f0] ring-rose-500 shadow-md'
-                : 'bg-rose-500 text-white hover:bg-rose-600 shadow-sm opacity-95 hover:opacity-100'
+                ? 'bg-rose-600 text-white shadow-inner'
+                : 'bg-white text-rose-600 hover:bg-rose-50'
             }`}
           >
-            <Search size={22} />
-            <span className="text-center">Buscar Familiar (Reconocimiento Facial)</span>
+            <Search size={20} className="shrink-0" />
+            <span className="text-center leading-tight">Buscar Familiar</span>
           </button>
 
           <button
             onClick={() => setActiveTab('reportar')}
-            className={`flex flex-col sm:flex-row items-center justify-center gap-2 p-3 rounded-xl text-sm sm:text-base font-bold transition-all duration-300 ${
+            role="tab"
+            aria-selected={activeTab === 'reportar'}
+            className={`flex-1 basis-1/2 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 px-2 py-3 text-xs sm:text-base font-bold border-l-2 border-slate-200 transition-all duration-300 ${
               activeTab === 'reportar'
-                ? 'bg-blue-600 text-white ring-2 ring-offset-2 ring-offset-[#e2e8f0] ring-blue-500 shadow-md'
-                : 'bg-blue-500 text-white hover:bg-blue-600 shadow-sm opacity-95 hover:opacity-100'
+                ? 'bg-blue-600 text-white shadow-inner'
+                : 'bg-white text-blue-600 hover:bg-blue-50'
             }`}
           >
-            <PlusCircle size={22} />
-            <span className="text-center">Reportar Persona Encontrada</span>
+            <PlusCircle size={20} className="shrink-0" />
+            <span className="text-center leading-tight">Reportar Persona Encontrada</span>
           </button>
         </div>
 
 
 
         {activeTab === 'buscar' && (
-          <SearchMissingForm 
-            foundPersons={foundPersons} 
-            onTriggerReunion={handleTriggerReunion} 
+          <SearchMissingForm
+            onTriggerReunion={handleTriggerReunion}
           />
         )}
 
@@ -197,22 +223,40 @@ export default function App() {
         )}
 
         {/* Global Database Status (placed below active form) */}
-        <div className="flex justify-center mt-8">
-          <div className="inline-flex items-center gap-2 text-xs font-semibold bg-white border border-slate-200/60 rounded-lg py-1.5 px-3 text-slate-600 shadow-sm">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>Cantidad de rostros encontrados: <span className="font-mono text-slate-800 font-bold">{foundPersons.length}</span></span>
-          </div>
+        <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+          {[
+            { label: 'Rostros encontrados', value: foundPersons.length, color: 'bg-emerald-400' },
+            { label: 'Personas reportadas', value: stats.totalFound, color: 'bg-blue-400' },
+            { label: 'Matches realizados', value: stats.reunitedCount, color: 'bg-rose-400' },
+            {
+              label: 'Última actualización',
+              value: formatAgo(lastUpdated),
+              color: 'bg-amber-400',
+            },
+          ].map((s) => (
+            <div
+              key={s.label}
+              className="flex items-center gap-2 bg-white border border-slate-200/60 rounded-xl py-2 px-3 shadow-sm min-w-0"
+            >
+              <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${s.color} animate-pulse`}></span>
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide leading-tight truncate">{s.label}</p>
+                <p className="text-sm font-bold text-slate-800 font-mono leading-tight truncate">{s.value}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </main>
 
       {/* Main Footer */}
-      <footer className="bg-slate-50 mt-12 border-t border-slate-200">
+      <footer className="bg-slate-50 border-t border-slate-200">
         <div className="h-1.5 w-full flex">
           <div className="h-full w-1/3 bg-amber-400"></div>
           <div className="h-full w-1/3 bg-blue-600"></div>
           <div className="h-full w-1/3 bg-rose-600"></div>
         </div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col items-center justify-center text-center space-y-2">
+        <div className="max-w-7xl mx-auto p-4 sm:px-6 lg:px-8 py-6 flex flex-col
+         justify-center text-center space-y-2">
           <h3 className="text-sm sm:text-base font-bold text-slate-800 flex flex-wrap items-center justify-center gap-1.5">
             Hecho con <Heart size={18} className="fill-rose-500 text-rose-500 animate-pulse" /> para el soporte humanitario en Venezuela
           </h3>
