@@ -4,14 +4,18 @@
  */
 
 import React, { useState, useRef } from 'react';
-import { Search, Camera, AlertCircle, FileText, Heart, MapPin, Phone, ArrowRight, HelpCircle, X, Flag } from 'lucide-react';
+import { Search, Camera, AlertCircle, HelpCircle } from 'lucide-react';
 import { FoundPerson, MatchResult } from '../types';
 import { buscarPersona, reportarPublicacion } from '../api';
 import PhotoUploader, { Photo } from './form/PhotoUploader';
 import HelpModal, { HelpStep } from './form/HelpModal';
 import DocumentInput from './form/DocumentInput';
 import { useFormDraft } from './form/useFormDraft';
-import { inputClasses } from './form/Field';
+import { usePhotoUpload } from '../hooks/usePhotoUpload';
+import AnalysisProgress from './search/AnalysisProgress';
+import CandidateModal from './search/CandidateModal';
+import MatchGrid from './search/MatchGrid';
+import TextField from './form/TextField';
 
 // ponytail: capacity knob — set to 1 for single-photo mode, raise to allow more
 const MAX_IMAGES = 1;
@@ -51,21 +55,19 @@ export default function SearchMissingForm() {
   const [selectedCandidate, setSelectedCandidate] = useState<FoundPerson | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [idError, setIdError] = useState<string | null>(null);
+  const [resultsError, setResultsError] = useState<string | null>(null);
   const [reportedIds, setReportedIds] = useState<string[]>([]);
   const [page, setPage] = useState(0);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
   const inFlight = useRef(false); // evita peticiones duplicadas si el usuario satura el botón
 
-  const addFiles = (files: FileList | File[]) => {
-    const imgs = Array.from(files).filter((f) => f.type.startsWith('image/'));
-    setPhotos((prev) => {
-      const room = MAX_IMAGES - prev.length;
-      return [...prev, ...imgs.slice(0, room).map((file) => ({ file, url: URL.createObjectURL(file) }))];
-    });
-    setError(null);
-  };
-  const removePhoto = (idx: number) => setPhotos((prev) => prev.filter((_, i) => i !== idx));
+  const { addFiles, removePhoto, resetPhotos } = usePhotoUpload({
+    max: MAX_IMAGES,
+    photos,
+    setPhotos,
+    onAdd: () => setError(null),
+  });
 
   const startAnalysis = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,6 +85,7 @@ export default function SearchMissingForm() {
     setAnalysisProgress(0);
     setAnalysisStep('Subiendo fotos...');
     setPage(0);
+    setResultsError(null);
 
     // Loader paced to ~10s: climbs smoothly toward 95% and waits there until the
     // backend responds; on response it snaps straight to 100% (early or late).
@@ -114,10 +117,8 @@ export default function SearchMissingForm() {
         clearInterval(tick);
         setAnalysisProgress(100);
         setAnalysisStep('Búsqueda completada.');
-        setTimeout(() => {
-          setSearchResults(results);
-          setIsAnalyzing(false);
-        }, 400);
+        setSearchResults(results);
+        setIsAnalyzing(false);
       })
       .catch((err) => {
         done = true;
@@ -130,17 +131,33 @@ export default function SearchMissingForm() {
   };
 
   const handleResetSearch = () => {
-    setPhotos([]);
+    resetPhotos();
     setIdError(null);
+    setError(null);
+    setResultsError(null);
     setSearchResults(null);
     setSelectedCandidate(null);
     setReportedIds([]);
     setPage(0);
   };
 
-  const totalPages = searchResults ? Math.ceil(searchResults.length / PAGE_SIZE) : 0;
-  const pageItems = searchResults ? searchResults.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE) : [];
+  const handleReportPublication = async (personId: string) => {
+    setReportedIds((prev) => [...prev, personId]);
+    setConfirmingId(null);
+    setResultsError(null);
 
+    try {
+      await reportarPublicacion(personId);
+    } catch {
+      setReportedIds((prev) => prev.filter((currentId) => currentId !== personId));
+      setResultsError('No se pudo enviar el reporte en este momento. Intenta de nuevo.');
+    }
+  };
+
+  const handleOpenCandidate = (personId: string) => {
+    const person = searchResults?.find((result) => result.foundPerson.id === personId)?.foundPerson ?? null;
+    setSelectedCandidate(person);
+  };
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-6" id="search-missing-view">
@@ -204,15 +221,18 @@ export default function SearchMissingForm() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label htmlFor="search-nombre" className="text-[11px] font-semibold text-slate-500 normal-case block">Nombre</label>
-                  <input
+                  <TextField
+                    label="Nombre"
                     id="search-nombre"
-                    type="text"
                     placeholder="Nombre de quien buscas"
                     maxLength={80}
                     value={qNombre}
-                    onChange={(e) => { setQNombre(e.target.value); setIdError(null); }}
-                    className={inputClasses('rose', !!idError)}
+                    onChange={(value) => {
+                      setQNombre(value);
+                      setIdError(null);
+                    }}
+                    accent="rose"
+                    invalid={!!idError}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -236,19 +256,7 @@ export default function SearchMissingForm() {
 
           {/* Action Trigger / Scanning Simulation overlay */}
           {isAnalyzing ? (
-            <div className="space-y-2.5 bg-slate-50 border border-slate-100 rounded-xl p-4" id="analysis-status">
-              <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-slate-600 font-medium truncate">{analysisStep}</span>
-                <span className="text-rose-600 font-bold tabular-nums shrink-0">{analysisProgress}%</span>
-              </div>
-              <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-rose-500 rounded-full transition-[width] duration-200 ease-linear"
-                  style={{ width: `${analysisProgress}%` }}
-                ></div>
-              </div>
-              <p className="text-[11px] text-slate-400">Reconocimiento facial en proceso, no cierres esta ventana.</p>
-            </div>
+            <AnalysisProgress step={analysisStep} progress={analysisProgress} />
           ) : (
             <button
               type="submit"
@@ -261,219 +269,24 @@ export default function SearchMissingForm() {
           )}
         </form>
       ) : (
-        /* Matches and Search results screen */
-        <div className="space-y-6" id="search-results-section">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-rose-50/50 border border-rose-100 rounded-xl p-5">
-            <div>
-              <p className="text-xs font-bold text-rose-800 uppercase tracking-wider">Comparación completada con éxito</p>
-              <h3 className="text-sm font-semibold text-slate-800 mt-0.5">Se encontraron {searchResults.length} registros coincidentes.</h3>
-            </div>
-            <button
-              onClick={handleResetSearch}
-              className="w-full sm:w-auto py-2.5 px-5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2 shrink-0"
-              id="btn-re-search"
-            >
-              <Search size={18} />
-              Buscar de nuevo
-            </button>
-          </div>
-
-          {/* List of matches */}
-          <div className="space-y-3">
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Posibles coincidencias — toca una para ver sus datos:</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {pageItems.map((result, idx) => {
-                const person = result.foundPerson;
-                const hasCi = !!person.ci && !/desconocido|no aplica/i.test(person.ci);
-                const isReported = reportedIds.includes(person.id);
-                const isConfirming = confirmingId === person.id;
-
-                return (
-                  <div
-                    key={person.id}
-                    role="button"
-                    tabIndex={isReported ? -1 : 0}
-                    onClick={() => !isReported && setSelectedCandidate(person)}
-                    onKeyDown={(e) => {
-                      if (!isReported && (e.key === 'Enter' || e.key === ' ')) {
-                        e.preventDefault();
-                        setSelectedCandidate(person);
-                      }
-                    }}
-                    className={`group text-left bg-white rounded-2xl border overflow-hidden transition-all ${
-                      isReported
-                        ? 'border-slate-200 opacity-60 cursor-default'
-                        : 'border-slate-200 hover:border-rose-300 hover:shadow-lg cursor-pointer'
-                    }`}
-                    id={`match-card-${idx}`}
-                  >
-                    <img
-                      src={person.imageUrl}
-                      alt={person.name}
-                      className={`w-full h-56 object-contain bg-slate-100 ${isReported ? 'grayscale' : ''}`}
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="p-4 space-y-2">
-                      <h4 className="text-base font-bold text-slate-800 leading-tight">{person.name}</h4>
-                      <p className="text-sm text-slate-600 flex items-start gap-1.5">
-                        <MapPin size={15} className="text-rose-500 shrink-0 mt-0.5" />
-                        <span className="line-clamp-2">{person.hospitalName}</span>
-                      </p>
-                      {hasCi && (
-                        <p className="text-xs text-slate-500 font-mono flex items-center gap-1.5">
-                          <FileText size={13} className="text-slate-400 shrink-0" />
-                          {person.ci}
-                        </p>
-                      )}
-
-                      {isReported ? (
-                        <p className="flex items-center gap-1.5 text-xs font-bold text-amber-600 pt-1">
-                          <Flag size={13} /> Reportado como falso. ¡Gracias!
-                        </p>
-                      ) : isConfirming ? (
-                        <div className="flex items-center justify-between gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
-                          <span className="text-xs font-semibold text-slate-600">¿Reportar como falso?</span>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setReportedIds((prev) => [...prev, person.id]);
-                                setConfirmingId(null);
-                                // Envía el reporte al back (no bloquea la UI)
-                                reportarPublicacion(person.id).catch(() => {});
-                              }}
-                              className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-500 hover:bg-amber-600 text-white transition-all"
-                            >
-                              Sí
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); setConfirmingId(null); }}
-                              className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 transition-all"
-                            >
-                              No
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-between gap-2 pt-1">
-                          <span className="inline-flex items-center gap-1 text-sm font-semibold text-rose-600 group-hover:gap-2 transition-all">
-                            Ver información <ArrowRight size={15} />
-                          </span>
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setConfirmingId(person.id); }}
-                            className="p-1.5 rounded-full text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-all shrink-0"
-                            title="Reportar como falso"
-                            aria-label="Reportar como falso"
-                          >
-                            <Flag size={15} />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  disabled={page === 0}
-                  className="inline-flex items-center gap-1 px-3.5 py-2 rounded-lg text-sm font-semibold border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                >
-                  <ArrowRight size={15} className="rotate-180" /> Anterior
-                </button>
-                <span className="text-xs font-semibold text-slate-500 tabular-nums">Página {page + 1} de {totalPages}</span>
-                <button
-                  type="button"
-                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-                  disabled={page >= totalPages - 1}
-                  className="inline-flex items-center gap-1 px-3.5 py-2 rounded-lg text-sm font-semibold border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                >
-                  Siguiente <ArrowRight size={15} />
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+        <MatchGrid
+          results={searchResults}
+          page={page}
+          pageSize={PAGE_SIZE}
+          reportedIds={reportedIds}
+          confirmingId={confirmingId}
+          resultsError={resultsError}
+          onResetSearch={handleResetSearch}
+          onOpenCandidate={handleOpenCandidate}
+          onConfirmReport={setConfirmingId}
+          onReportPublication={(personId) => {
+            void handleReportPublication(personId);
+          }}
+          onPageChange={setPage}
+        />
       )}
 
-      {/* Candidate Details Modal */}
-      {selectedCandidate && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm transition-all" onClick={() => setSelectedCandidate(null)}>
-          <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-md relative flex flex-col max-h-[90vh] overflow-hidden animate-[fadeIn_0.2s_ease-out]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Fixed image header — never scrolls out of view */}
-            <div className="relative shrink-0">
-              <img
-                src={selectedCandidate.imageUrl}
-                alt={selectedCandidate.name}
-                className="w-full h-64 sm:h-72 object-contain"
-                referrerPolicy="no-referrer"
-              />
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-4 pt-10">
-                <h4 className="font-bold text-white text-xl leading-tight">{selectedCandidate.name}</h4>
-                {!!selectedCandidate.ci && !/desconocido|no aplica/i.test(selectedCandidate.ci) && (
-                  <p className="text-xs text-white/80 font-mono mt-0.5">Cédula: {selectedCandidate.ci}</p>
-                )}
-              </div>
-              <button
-                onClick={() => setSelectedCandidate(null)}
-                className="absolute top-3 right-3 text-white bg-black/30 hover:bg-black/50 p-1.5 rounded-full transition-all backdrop-blur-sm"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Scrollable content below the image */}
-            <div className="overflow-y-auto p-5 sm:p-6 space-y-4 text-sm" id="candidate-detail-pane">
-              <div>
-                <span className="font-bold text-slate-700 block mb-1">Ubicación Actual:</span>
-                <p className="text-slate-600 flex items-start gap-1.5">
-                  <MapPin size={16} className="text-rose-500 shrink-0 mt-0.5" />
-                  <span><strong>{selectedCandidate.hospitalName}</strong> - {selectedCandidate.locationAddress}</span>
-                </p>
-              </div>
-
-              <div>
-                <span className="font-bold text-slate-700 block mb-1">Descripción Física y Estado:</span>
-                <p className="text-slate-600 leading-relaxed bg-slate-50 border border-slate-200/50 rounded-xl p-3 font-sans italic text-xs">
-                  "{selectedCandidate.physicalDescription}"
-                </p>
-              </div>
-
-              <div>
-                <span className="font-bold text-slate-700 block mb-1">Contacto de Enlace o Rescate:</span>
-                <p className="text-slate-700 flex items-center gap-2 font-mono bg-slate-50 px-3 py-2 rounded-lg border border-slate-200/50">
-                  <Phone size={14} className="text-slate-400 shrink-0" />
-                  {selectedCandidate.contactPhone}
-                </p>
-              </div>
-
-              <div className="pt-4 border-t border-slate-200/60">
-                <a
-                  href={waLink(selectedCandidate.contactPhone)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
-                  id="btn-request-reunion"
-                >
-                  <Heart size={16} />
-                  Contactar vía WhatsApp
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <CandidateModal candidate={selectedCandidate} onClose={() => setSelectedCandidate(null)} waLink={waLink} />
     </div>
   );
 }
