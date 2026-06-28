@@ -165,7 +165,7 @@ export default function App() {
       {/* Main Header / Navigation */}
       <header className="bg-white border-b border-slate-100 shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex justify-between items-center h-16 gap-2">
             {/* Logo area */}
             <div className="flex items-center gap-2 sm:gap-3 shrink min-w-0">
               <div className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-xl shadow-sm overflow-hidden shrink-0 flex items-center justify-center">
@@ -182,17 +182,14 @@ export default function App() {
               </div>
             </div>
 
-            {/* Top Status and Actions */}
-            <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-
-              <button
-                onClick={openErrorModal}
-                className="flex items-center gap-1.5 sm:gap-2 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm shrink-0 whitespace-nowrap"
-              >
-                <AlertTriangle size={14} />
-                <span>Reportar Error</span>
-              </button>
-            </div>
+         
+            <button
+              onClick={openErrorModal}
+              className="flex items-center gap-1.5 sm:gap-2 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm shrink-0 whitespace-nowrap"
+            >
+              <AlertTriangle size={14} />
+              <span>Reportar Error</span>
+            </button>
           </div>
         </div>
       </header>

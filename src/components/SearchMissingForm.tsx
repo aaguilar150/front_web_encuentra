@@ -208,7 +208,7 @@ export default function SearchMissingForm() {
                   <input
                     id="search-nombre"
                     type="text"
-                    placeholder="Nombre de quien buscas"
+                    placeholder="Nombre completo de quien buscas"
                     maxLength={80}
                     value={qNombre}
                     onChange={(e) => { setQNombre(e.target.value); setIdError(null); }}
