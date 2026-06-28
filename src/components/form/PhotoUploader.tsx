@@ -10,13 +10,43 @@ import { Upload, X, Camera } from 'lucide-react';
 export type Photo = { file: File; url: string };
 
 /**
- * Agrega imágenes a la lista respetando `max`: filtra no-imágenes y crea el
- * objectURL de preview. Compartido por las dos vistas (buscar/reportar).
+ * Seguridad: valida que el archivo SEA una imagen por sus "magic bytes" (firma
+ * binaria), no por su MIME (que el cliente puede falsear). Cubre JPEG, PNG, GIF,
+ * WebP, BMP, TIFF y HEIC/HEIF/AVIF. Si no se puede leer, cae al MIME como respaldo.
  */
-export function appendImages(prev: Photo[], files: FileList | File[], max: number): Photo[] {
-  const imgs = Array.from(files).filter((f) => f.type.startsWith('image/'));
+export async function isValidImageFile(file: File): Promise<boolean> {
+  try {
+    const b = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+    if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return true; // JPEG
+    if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return true; // PNG
+    if (b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x38) return true; // GIF
+    if (b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 &&
+        b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50) return true; // WebP
+    if (b[0] === 0x42 && b[1] === 0x4d) return true; // BMP
+    if (b[0] === 0x49 && b[1] === 0x49 && b[2] === 0x2a && b[3] === 0x00) return true; // TIFF LE
+    if (b[0] === 0x4d && b[1] === 0x4d && b[2] === 0x00 && b[3] === 0x2a) return true; // TIFF BE
+    if (b[4] === 0x66 && b[5] === 0x74 && b[6] === 0x79 && b[7] === 0x70) return true; // HEIC/HEIF/AVIF (ftyp)
+    return false;
+  } catch {
+    return file.type.startsWith('image/');
+  }
+}
+
+/** Filtra una lista a solo imágenes reales (validadas por magic bytes). */
+export async function filterValidImages(files: FileList | File[]): Promise<File[]> {
+  const arr = Array.from(files);
+  const checked = await Promise.all(arr.map(async (f) => ((await isValidImageFile(f)) ? f : null)));
+  return checked.filter((f): f is File => f !== null);
+}
+
+/**
+ * Agrega archivos (ya validados) a la lista respetando `max` y crea el objectURL
+ * de preview. La validación de tipo se hace antes con `filterValidImages`.
+ */
+export function appendImages(prev: Photo[], files: File[], max: number): Photo[] {
   const room = max - prev.length;
-  return [...prev, ...imgs.slice(0, room).map((file) => ({ file, url: URL.createObjectURL(file) }))];
+  if (room <= 0) return prev;
+  return [...prev, ...files.slice(0, room).map((file) => ({ file, url: URL.createObjectURL(file) }))];
 }
 
 const ACCENTS = {
@@ -56,10 +86,10 @@ export default function PhotoUploader({ photos, max, accent, error, disabled, on
 
   return (
     <>
-      {/* Subir desde archivos/galería */}
-      <input type="file" ref={inputRef} onChange={handleInput} accept="image/*" multiple={max > 1} className="hidden" />
+      {/* Subir desde archivos/galería (incluye HEIC/HEIF de iPhone) */}
+      <input type="file" ref={inputRef} onChange={handleInput} accept="image/*,.heic,.heif" multiple={max > 1} className="hidden" />
       {/* Tomar foto con la cámara (capture abre la cámara en móvil) */}
-      <input type="file" ref={cameraRef} onChange={handleInput} accept="image/*" capture="environment" className="hidden" />
+      <input type="file" ref={cameraRef} onChange={handleInput} accept="image/*,.heic,.heif" capture="environment" className="hidden" />
       <div
         onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
         onDrop={(e) => { e.preventDefault(); e.stopPropagation(); if (e.dataTransfer.files) onAdd(e.dataTransfer.files); }}
@@ -71,8 +101,8 @@ export default function PhotoUploader({ photos, max, accent, error, disabled, on
             <div className={`w-11 h-11 rounded-full ${a.iconWrap} flex items-center justify-center mx-auto mb-2`}>
               <Upload size={20} />
             </div>
-            <p className="text-sm font-semibold text-slate-700">Sube una foto o tómala con la cámara</p>
-            <p className="text-xs text-slate-400 mt-0.5">JPG o PNG — rostro frontal claro{max > 1 ? ` (hasta ${max})` : ''}</p>
+            <p className="text-sm font-semibold text-slate-700">Haz clic o arrastra las fotos aquí</p>
+            <p className="text-xs text-slate-400 mt-0.5">JPG, PNG, WebP, HEIC y más — rostro frontal claro{max > 1 ? ` (hasta ${max})` : ''}</p>
             <div className="flex items-center justify-center gap-2 mt-3">
               <button type="button" onClick={() => inputRef.current?.click()} className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border-2 ${a.add} text-xs font-bold transition-all`}>
                 <Upload size={15} /> Subir foto

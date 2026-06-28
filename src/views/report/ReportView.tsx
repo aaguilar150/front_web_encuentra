@@ -10,7 +10,7 @@
 import React, { useState, useRef } from 'react';
 import { PlusCircle, Camera, AlertCircle, MapPin, Phone, Building, Check, Heart, User, HelpCircle } from 'lucide-react';
 import { reportarEncontrado, ResultadoRegistro } from '../../core/container';
-import PhotoUploader, { Photo, appendImages } from '../../components/form/PhotoUploader';
+import PhotoUploader, { Photo, appendImages, filterValidImages } from '../../components/form/PhotoUploader';
 import DocumentInput from '../../components/form/DocumentInput';
 import LocationCombobox, { useSavedLocations } from '../../components/form/LocationCombobox';
 import Field from '../../components/form/Field';
@@ -57,11 +57,16 @@ export default function ReportView() {
   const { locations, remember, forget } = useSavedLocations();
   const inFlight = useRef(false); // evita registros duplicados si el usuario satura el botón
 
-  const addFiles = (files: FileList | File[]) => {
-    setPhotos((prev) => appendImages(prev, files, MAX_IMAGES));
+  const addFiles = async (files: FileList | File[]) => {
+    const valid = await filterValidImages(files); // valida por magic bytes
+    if (!valid.length) return;
+    setPhotos((prev) => appendImages(prev, valid, MAX_IMAGES));
     clearError('photos');
   };
-  const removePhoto = (idx: number) => setPhotos((prev) => prev.filter((_, i) => i !== idx));
+  const removePhoto = (idx: number) => {
+    URL.revokeObjectURL(photos[idx]?.url ?? ''); // libera el preview
+    setPhotos((prev) => prev.filter((_, i) => i !== idx));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -174,7 +179,7 @@ export default function ReportView() {
           )}
 
           <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
-            <Button variant="primary" accent="slate" onClick={handleResetForm} id="btn-add-more">
+            <Button variant="primary" accent="slate" icon={PlusCircle} onClick={handleResetForm} id="btn-add-more">
               Reportar Otra Persona
             </Button>
           </div>

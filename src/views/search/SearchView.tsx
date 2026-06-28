@@ -9,7 +9,7 @@
 import React, { useState, useRef } from 'react';
 import { Search, Camera, HelpCircle, ArrowRight } from 'lucide-react';
 import { buscarPersona, reportarPublicacion, FoundPerson, MatchResult } from '../../core/container';
-import PhotoUploader, { Photo, appendImages } from '../../components/form/PhotoUploader';
+import PhotoUploader, { Photo, appendImages, filterValidImages } from '../../components/form/PhotoUploader';
 import DocumentInput from '../../components/form/DocumentInput';
 import { inputClasses } from '../../components/form/Field';
 import { useFormDraft } from '../../components/form/useFormDraft';
@@ -52,11 +52,16 @@ export default function SearchView() {
 
   const inFlight = useRef(false); // evita peticiones duplicadas si el usuario satura el botón
 
-  const addFiles = (files: FileList | File[]) => {
-    setPhotos((prev) => appendImages(prev, files, MAX_IMAGES));
+  const addFiles = async (files: FileList | File[]) => {
+    const valid = await filterValidImages(files); // valida por magic bytes
+    if (!valid.length) return;
+    setPhotos((prev) => appendImages(prev, valid, MAX_IMAGES));
     setError(null);
   };
-  const removePhoto = (idx: number) => setPhotos((prev) => prev.filter((_, i) => i !== idx));
+  const removePhoto = (idx: number) => {
+    URL.revokeObjectURL(photos[idx]?.url ?? ''); // libera el preview
+    setPhotos((prev) => prev.filter((_, i) => i !== idx));
+  };
 
   const startAnalysis = (e: React.FormEvent) => {
     e.preventDefault();
