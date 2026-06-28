@@ -20,7 +20,7 @@ export const INITIAL_FOUND_PERSONS: FoundPerson[] = [
   },
   {
     id: "usr_f9c2d1b5-8290-482a-a5c3-a3d162985172",
-    name: "Desconocido (Refugiado #12)",
+    name: "Andrés Felipe Moreno",
     ci: "Desconocido",
     hospitalName: "Refugio Polideportivo de La Guaira",
     locationAddress: "Zona B, Colchoneta 45, Av. José María España, La Guaira",
@@ -44,7 +44,7 @@ export const INITIAL_FOUND_PERSONS: FoundPerson[] = [
   },
   {
     id: "usr_77a281fb-27cb-4b2a-a92c-ee91b92cd311",
-    name: "Desconocida (Refugiada #34)",
+    name: "Carmen Rosa Urdaneta",
     ci: "Desconocido",
     hospitalName: "Refugio Iglesia Corazón de Jesús",
     locationAddress: "Salón Parroquial, Petare, Caracas",
@@ -56,7 +56,7 @@ export const INITIAL_FOUND_PERSONS: FoundPerson[] = [
   },
   {
     id: "usr_88cb01ff-12a3-49fb-81c8-c9201f9cc00d",
-    name: "Santiago Alejandro Ruiz (Niño)",
+    name: "Santiago",
     ci: "Desconocido",
     hospitalName: "Centro de Cuidado Infantil San José",
     locationAddress: "Área de Protección de Menores, Maracay, Aragua",
@@ -65,6 +65,18 @@ export const INITIAL_FOUND_PERSONS: FoundPerson[] = [
     imageUrl: "https://images.unsplash.com/photo-1503919545889-aef636e10ad4?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
     dateFound: "2026-06-25T10:00:00Z",
     status: "refugiado"
+  },
+  {
+    id: "usr_c3d4e5f6-1234-4abc-8def-a1b2c3d4e5f6",
+    name: "Valentina",
+    ci: "Desconocido",
+    hospitalName: "Hospital de Niños J.M. de los Ríos",
+    locationAddress: "Piso 3, Sala de Pediatría, Caracas",
+    contactPhone: "+58 416-5556677",
+    physicalDescription: "Niña de aprox. 9-10 años, cabello negro largo trenzado, tez morena, ojos negros. Vestía uniforme escolar azul y blanco con mochila rosada. Habla con acento llanero, menciona que viene de Apure.",
+    imageUrl: "https://images.unsplash.com/photo-1611601322175-ef8ec8c85f01?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
+    dateFound: "2026-06-26T09:30:00Z",
+    status: "hospitalizado"
   }
 ];
 

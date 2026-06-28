@@ -29,12 +29,12 @@ const MEDIA_BASE = (() => {
   return '';
 })();
 
-/** Devuelve siempre una URL utilizable: deja las completas y completa las relativas. */
 export const resolveImageUrl = (u: string): string => {
   if (!u) return u;
-  if (/^(https?:|data:|blob:)/.test(u)) return u; // ya es URL completa
+  if (/^(javascript:|vbscript:|data:(?!image\/))/i.test(u)) return '';
+  if (/^(https?:|blob:|data:image\/)/.test(u)) return u;
   const path = u.startsWith('/') ? u : `/${u}`;
-  return MEDIA_BASE ? `${MEDIA_BASE}${path}` : path; // sin base configurada -> ruta relativa
+  return MEDIA_BASE ? `${MEDIA_BASE}${path}` : path;
 };
 
 // ---- Tipos de respuesta (swagger) ----

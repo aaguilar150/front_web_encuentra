@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
@@ -16,7 +18,6 @@
     "@google/genai": "^2.10.0",
     "@tailwindcss/vite": "^4.3.1",
     "@tanstack/react-form": "^1.33.0",
-    "@tanstack/zod-form-adapter": "^0.42.1",
     "@vitejs/plugin-react": "^6.0.3",
     "axios": "^1.18.1",
     "class-variance-authority": "^0.7.1",
@@ -24,7 +25,7 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "lucide-react": "^0.577.0",
-    "motion": "^12.23.24",
+    "motion": "^12.42.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "tailwind-merge": "^3.6.0",
@@ -32,14 +33,27 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/express": "^5.0.6",
     "@types/node": "^26.0.1",
     "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.5.2",
     "esbuild": "^0.28.1",
+    "jsdom": "^26.1.0",
+    "msw": "^2.10.4",
     "tailwindcss": "^4.3.1",
     "tsx": "^4.22.4",
     "typescript": "~6.0.3",
-    "vite": "^8.1.0"
+    "vite": "^8.1.0",
+    "vitest": "^4.1.9"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }

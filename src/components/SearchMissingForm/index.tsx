@@ -120,7 +120,7 @@ export default function SearchMissingForm() {
           id="btn-toggle-help"
         >
           <HelpCircle size={15} />
-          ¿CÓMO FUNCIONA?
+          CÓMO FUNCIONA?
         </Button>
       </div>
 
@@ -265,7 +265,7 @@ export default function SearchMissingForm() {
           </div>
 
           <div className="space-y-3">
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Posibles coincidencias — toca una para ver sus datos:</p>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Posibles coincidencias ÔÇö toca una para ver sus datos:</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {pageItems.map((result, idx) => {
                 const person = result.foundPerson;
@@ -313,11 +313,11 @@ export default function SearchMissingForm() {
 
                       {isReported ? (
                         <p className="flex items-center gap-1.5 text-xs font-bold text-amber-600 pt-1">
-                          <Flag size={13} /> Reportado como falso. ¡Gracias!
+                          <Flag size={13} /> Reportado como falso. ┬íGracias!
                         </p>
                       ) : isConfirming ? (
                         <div className="flex items-center justify-between gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
-                          <span className="text-xs font-semibold text-slate-600">¿Reportar como falso?</span>
+                          <span className="text-xs font-semibold text-slate-600">┬┐Reportar como falso?</span>
                           <div className="flex items-center gap-1.5 shrink-0">
                             <Button
                               variant="toggleOn"

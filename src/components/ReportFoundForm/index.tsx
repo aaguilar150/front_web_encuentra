@@ -9,7 +9,8 @@ import { reportarEncontrado, ResultadoRegistro } from '@/api';
 import PhotoUploader, { Photo } from '../form/PhotoUploader';
 import HelpModal, { HelpStep } from '../form/HelpModal';
 import DocumentInput from '../form/DocumentInput';
-import LocationCombobox, { useSavedLocations } from '../form/LocationCombobox';
+import LocationCombobox from '../form/LocationCombobox';
+import { useSavedLocations } from '@/hooks/useSavedLocations';
 import Field, { inputClasses } from '../form/Field';
 import { fieldError } from '../form/fieldError';
 
