@@ -4,25 +4,27 @@
  */
 
 import React, { useState, useRef } from 'react';
-import { PlusCircle, Camera, AlertCircle, MapPin, Phone, Building, Check, Heart, User, HelpCircle, Baby } from 'lucide-react';
+import { PlusCircle, Camera, AlertCircle, MapPin, Phone, Building, User, HelpCircle } from 'lucide-react';
 import { FoundPerson } from '../types';
 import { reportarEncontrado, ResultadoRegistro } from '../api';
 import PhotoUploader, { Photo } from './form/PhotoUploader';
 import HelpModal, { HelpStep } from './form/HelpModal';
 import DocumentInput from './form/DocumentInput';
-import LocationCombobox, { useSavedLocations } from './form/LocationCombobox';
+import LocationCombobox from './form/LocationCombobox';
 import { useFormDraft } from './form/useFormDraft';
-import Field, { inputClasses } from './form/Field';
+import { usePhotoUpload } from '../hooks/usePhotoUpload';
+import ChildToggle from './report/ChildToggle';
+import ReportSuccess from './report/ReportSuccess';
+import TextField from './form/TextField';
+import TextAreaField from './form/TextAreaField';
+import PhoneField from './form/PhoneField';
+import { useSavedLocations } from '../hooks/useSavedLocations';
 
 interface ReportFoundFormProps {
   onAddPerson: (person: FoundPerson) => void;
 }
 
-// ponytail: capacity knob — backend accepts varias fotos del mismo registro
 const MAX_IMAGES = 1;
-
-// Teléfono VE: prefijo elegido + 7 dígitos. Ej: 0424 + 8135166 -> 04248135166.
-const PHONE_PREFIXES = ['0424', '0412', '0416', '0426', '0422'];
 
 const HELP_STEPS: HelpStep[] = [
   { n: 1, t: 'Capturar Foto', d: 'Carga una o varias fotos. El rostro debe estar bien iluminado y de frente.' },
@@ -33,7 +35,6 @@ const HELP_STEPS: HelpStep[] = [
 
 export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
   const [showHelp, setShowHelp] = useState(false);
-  // Persistido entre cambios de pestaña (draft 'report.*')
   const [photos, setPhotos] = useFormDraft<Photo[]>('report.photos', []);
   const [isChild, setIsChild] = useFormDraft('report.isChild', false);
   const [nombre, setNombre] = useFormDraft('report.nombre', '');
@@ -50,26 +51,22 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<ResultadoRegistro | null>(null);
-  // Errores por campo: { photos, refugio, telefono, docResponsable, _form }
   const [errors, setErrors] = useState<Record<string, string>>({});
   const clearError = (field: string) => setErrors((prev) => (prev[field] ? { ...prev, [field]: '' } : prev));
 
   const { locations, remember, forget } = useSavedLocations();
-  const inFlight = useRef(false); // evita registros duplicados si el usuario satura el botón
+  const inFlight = useRef(false);
 
-  const addFiles = (files: FileList | File[]) => {
-    const imgs = Array.from(files).filter((f) => f.type.startsWith('image/'));
-    setPhotos((prev) => {
-      const room = MAX_IMAGES - prev.length;
-      return [...prev, ...imgs.slice(0, room).map((file) => ({ file, url: URL.createObjectURL(file) }))];
-    });
-    clearError('photos');
-  };
-  const removePhoto = (idx: number) => setPhotos((prev) => prev.filter((_, i) => i !== idx));
+  const { addFiles, removePhoto, resetPhotos } = usePhotoUpload({
+    max: MAX_IMAGES,
+    photos,
+    setPhotos,
+    onAdd: () => clearError('photos'),
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (inFlight.current) return; // ya hay un registro en curso, ignora el reintento
+    if (inFlight.current) return;
 
     const errs: Record<string, string> = {};
     if (photos.length === 0) errs.photos = 'Adjunta al menos una fotografía clara del rostro.';
@@ -105,7 +102,6 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
       setResult(res);
       remember(ubicacion);
 
-      // Bump the local "personas reportadas" badge in App (cosmetic).
       onAddPerson({
         id: res.person_id,
         name: isChild ? 'Menor protegido' : [nombre, apellido].filter(Boolean).join(' ').trim() || 'Desconocido',
@@ -127,7 +123,7 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
   };
 
   const handleResetForm = () => {
-    setPhotos([]);
+    resetPhotos();
     setIsChild(false);
     setNombre('');
     setApellido('');
@@ -180,43 +176,7 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
       />
 
       {result ? (
-        <div className="text-center py-10 px-4 max-w-md mx-auto" id="report-success-screen">
-          <div className="w-14 h-14 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-100 shadow-sm">
-            <Check size={28} />
-          </div>
-          <h3 className="text-lg font-bold text-slate-900">¡Registro Exitoso!</h3>
-          <p className="text-sm text-slate-600 mt-2 leading-relaxed">
-            La persona quedó indexada. Su rostro ya puede coincidir con las búsquedas de sus seres queridos.
-          </p>
-          <p className="text-xs text-slate-400 font-mono mt-2">Código de registro: {result.codigo}</p>
-
-          {result.alerta && (
-            <div className="mt-5 bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-left text-sm space-y-1.5">
-              <p className="font-bold text-emerald-800 flex items-center gap-1.5">
-                <Heart size={15} className="fill-emerald-500 text-emerald-500" /> ¡Un familiar ya la buscaba!
-              </p>
-              {result.alerta.familiar_nombre && (
-                <p className="text-slate-600"><strong>Familiar:</strong> {result.alerta.familiar_nombre}</p>
-              )}
-              {result.alerta.familiar_telefono && (
-                <p className="text-slate-600 flex items-center gap-1.5">
-                  <Phone size={14} className="text-emerald-600" /> {result.alerta.familiar_telefono}
-                </p>
-              )}
-              <p className="text-[11px] text-emerald-700">Coincidencia {result.alerta.coincidencia}% · confianza {result.alerta.confianza}.</p>
-            </div>
-          )}
-
-          <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
-            <button
-              onClick={handleResetForm}
-              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg transition-all"
-              id="btn-add-more"
-            >
-              Reportar Otra Persona
-            </button>
-          </div>
-        </div>
+        <ReportSuccess result={result} onReset={handleResetForm} />
       ) : (
         <form onSubmit={handleSubmit} className="space-y-5">
           {errors._form && (
@@ -226,7 +186,6 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
             </div>
           )}
 
-          {/* Photos */}
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-2">
               <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
@@ -239,32 +198,8 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
             <FieldError field="photos" />
           </div>
 
-          {/* Child Toggle Switch */}
-          <div className="bg-amber-50/40 border-2 border-amber-200/60 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm" id="child-toggle-container">
-            <div>
-              <span className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                <Baby size={20} className="text-amber-500" />
-                ¿Es menor de edad?
-              </span>
-              <p className="text-xs text-slate-500 mt-1">Actívalo para aplicar protección de identidad (oculta nombre y apellido).</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsChild(!isChild)}
-              aria-pressed={isChild}
-              className={`px-6 py-3 rounded-xl text-sm font-extrabold transition-all duration-300 shrink-0 flex items-center justify-center gap-2 shadow-sm border-2 ${
-                isChild
-                  ? 'bg-amber-500 border-amber-500 hover:bg-amber-600 text-white shadow-[0_4px_20px_rgba(245,158,11,0.4)] scale-105'
-                  : 'bg-white border-amber-400 text-amber-700 hover:bg-amber-100 hover:border-amber-500 hover:shadow-md'
-              }`}
-              id="btn-toggle-child"
-            >
-              {isChild ? <Check size={18} /> : <Baby size={18} />}
-              {isChild ? 'MENOR PROTEGIDO' : 'SÍ, ES MENOR'}
-            </button>
-          </div>
+          <ChildToggle isChild={isChild} onToggle={() => setIsChild(!isChild)} />
 
-          {/* Section: Identity (hidden for minors) */}
           {!isChild && (
             <fieldset className="space-y-4">
               <legend className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2.5 flex items-center gap-2">
@@ -272,8 +207,8 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
                 Datos de la persona
               </legend>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Nombre" optional value={nombre} onChange={setNombre} placeholder="Ej: Juan" maxLength={80} id="person-name-input" />
-                <Field label="Apellido" optional value={apellido} onChange={setApellido} placeholder="Ej: Gómez" maxLength={80} id="person-lastname-input" />
+                <TextField label="Nombre" optional value={nombre} onChange={setNombre} placeholder="Ej: Juan" maxLength={80} id="person-name-input" />
+                <TextField label="Apellido" optional value={apellido} onChange={setApellido} placeholder="Ej: Gómez" maxLength={80} id="person-lastname-input" />
               </div>
 
               <div className="space-y-1.5">
@@ -285,14 +220,13 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
             </fieldset>
           )}
 
-          {/* Section: Location & contact */}
           <fieldset className="space-y-4">
             <legend className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2.5 flex items-center gap-2">
               <MapPin size={13} className="text-slate-400" />
               Ubicación y contacto
             </legend>
 
-            <Field
+            <TextField
               label="Refugio, Hospital o Ente Receptivo"
               required
               value={refugio}
@@ -314,33 +248,18 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
               <label htmlFor="contact-phone-input" className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
                 Teléfono del responsable <span className="text-rose-500">*</span>
               </label>
-              <div className="flex gap-2">
-                <select
-                  value={telPrefijo}
-                  onChange={(e) => setTelPrefijo(e.target.value)}
-                  className="px-3 py-2.5 bg-white border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-xl text-slate-800 text-sm outline-none transition-all font-bold shadow-sm shrink-0"
-                  aria-label="Prefijo telefónico"
-                >
-                  {PHONE_PREFIXES.map((p) => (
-                    <option key={p} value={p}>{p}</option>
-                  ))}
-                </select>
-                <div className="relative flex-1">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <Phone size={16} className="text-slate-400" />
-                  </div>
-                  <input
-                    type="tel"
-                    inputMode="numeric"
-                    placeholder="8135166"
-                    maxLength={7}
-                    value={telNumero}
-                    onChange={(e) => { setTelNumero(e.target.value.replace(/\D/g, '')); clearError('telefono'); }}
-                    className={inputClasses('blue', !!errors.telefono, true)}
-                    id="contact-phone-input"
-                  />
-                </div>
-              </div>
+              <PhoneField
+                prefix={telPrefijo}
+                number={telNumero}
+                onPrefixChange={setTelPrefijo}
+                onNumberChange={(value) => {
+                  setTelNumero(value);
+                  clearError('telefono');
+                }}
+                accent="blue"
+                error={errors.telefono}
+                id="contact-phone-input"
+              />
               <FieldError field="telefono" />
             </div>
 
@@ -366,10 +285,9 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
               </div>
             )}
 
-            <Field
+            <TextAreaField
               label="Descripción"
               optional
-              multiline
               counter
               value={descripcion}
               onChange={setDescripcion}

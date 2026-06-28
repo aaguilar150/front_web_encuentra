@@ -5,14 +5,14 @@
 
 export interface FoundPerson {
   id: string;
-  name: string; // Optional name, "Desconocido" if unknown
-  ci: string; // Optional Cédula, "Desconocido" if unknown
-  hospitalName: string; // Hospital/Refuge/Location where they are
-  locationAddress: string; // Actual location details
-  contactPhone: string; // Reporter's contact phone
-  physicalDescription: string; // Physical features, state of health, clothing
-  imageUrl: string; // Image placeholder / dataUrl for visual UI
-  dateFound: string; // ISO date string
+  name: string;
+  ci: string;
+  hospitalName: string;
+  locationAddress: string;
+  contactPhone: string;
+  physicalDescription: string;
+  imageUrl: string;
+  dateFound: string;
   status: 'refugiado' | 'hospitalizado' | 'desconocido' | 'reunificado';
 }
 

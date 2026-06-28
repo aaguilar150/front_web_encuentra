@@ -3,36 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Input de ubicación con desplegable de ubicaciones guardadas localmente.
- * Cada guardada puede borrarse con la X. La persistencia vive en useSavedLocations.
+ * Renderiza solo la UI; la persistencia vive en el hook useSavedLocations.
  */
 import React, { useState } from 'react';
 import { MapPin, ChevronDown, X } from 'lucide-react';
 import { inputClasses } from './Field';
-
-const LOCATIONS_KEY = 'ven_saved_locations';
-
-export function useSavedLocations() {
-  const [locations, setLocations] = useState<string[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem(LOCATIONS_KEY) || '[]');
-    } catch {
-      return [];
-    }
-  });
-
-  const persist = (list: string[]) => {
-    setLocations(list);
-    localStorage.setItem(LOCATIONS_KEY, JSON.stringify(list));
-  };
-  const remember = (v: string) => {
-    const val = v.trim();
-    if (!val) return;
-    persist([val, ...locations.filter((l) => l.toLowerCase() !== val.toLowerCase())].slice(0, 10));
-  };
-  const forget = (v: string) => persist(locations.filter((l) => l !== v));
-
-  return { locations, remember, forget };
-}
 
 interface Props {
   value: string;
@@ -45,7 +20,6 @@ interface Props {
 
 export default function LocationCombobox({ value, onChange, options, onForget, accent = 'blue', id }: Props) {
   const [open, setOpen] = useState(false);
-  // pr-10 deja sitio al chevron cuando hay opciones guardadas
   const cls = options.length ? inputClasses(accent).replace('pr-3.5', 'pr-10') : inputClasses(accent);
 
   return (

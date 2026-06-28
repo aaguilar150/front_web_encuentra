@@ -45,7 +45,7 @@ export default function PhotoUploader({ photos, max, accent, error, disabled, on
         type="file"
         ref={inputRef}
         onChange={(e) => { if (e.target.files) onAdd(e.target.files); e.target.value = ''; }}
-        accept="image/*"
+        accept="image/*,.heic,.heif"
         multiple={max > 1}
         className="hidden"
       />
@@ -61,7 +61,7 @@ export default function PhotoUploader({ photos, max, accent, error, disabled, on
               <Upload size={20} />
             </div>
             <p className="text-sm font-semibold text-slate-700">Haz clic o arrastra las fotos aquí</p>
-            <p className="text-xs text-slate-400 mt-0.5">JPG o PNG — rostro frontal claro{max > 1 ? ` (hasta ${max})` : ''}</p>
+            <p className="text-xs text-slate-400 mt-0.5">JPG, PNG, WebP, HEIC y más — rostro frontal claro{max > 1 ? ` (hasta ${max})` : ''}</p>
           </button>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">

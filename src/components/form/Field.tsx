@@ -34,6 +34,7 @@ interface FieldProps {
   type?: string;
   icon?: LucideIcon;
   error?: string;
+  invalid?: boolean;
   hint?: string;
   accent?: Accent;
   counter?: boolean;
@@ -55,6 +56,7 @@ export default function Field({
   type = 'text',
   icon: Icon,
   error,
+  invalid,
   hint,
   accent = 'blue',
   counter,
@@ -64,7 +66,7 @@ export default function Field({
   id,
 }: FieldProps) {
   const handle = (v: string) => onChange(numeric ? v.replace(/\D/g, '') : v);
-  const cls = `${inputClasses(accent, !!error, !!Icon)}${multiline ? ' resize-none' : ''}`;
+  const cls = `${inputClasses(accent, invalid || !!error, !!Icon)}${multiline ? ' resize-none' : ''}`;
   const autoId = useId();
   const fieldId = id ?? autoId;
 
