@@ -6,6 +6,7 @@
  */
 import React, { useRef } from 'react';
 import { Upload, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export type Photo = { file: File; url: string };
 
@@ -68,14 +69,15 @@ export default function PhotoUploader({ photos, max, accent, error, disabled, on
             {photos.map((p, idx) => (
               <div key={idx} className="relative aspect-square">
                 <img src={p.url} alt={`Foto ${idx + 1}`} className="w-full h-full object-contain bg-slate-100 rounded-lg border border-slate-200 shadow-sm" />
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="absolute -top-1.5 -right-1.5 bg-white text-slate-500 shadow-md border border-slate-200 hover:text-rose-600 hover:border-rose-200"
                   onClick={() => onRemove(idx)}
-                  className="absolute -top-1.5 -right-1.5 bg-white text-slate-500 p-1 rounded-full shadow-md border border-slate-200 hover:text-rose-600 hover:border-rose-200 transition-all z-10"
                   aria-label="Quitar foto"
                 >
                   <X size={13} strokeWidth={3} />
-                </button>
+                </Button>
               </div>
             ))}
             {photos.length < max && (

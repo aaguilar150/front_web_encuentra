@@ -5,6 +5,7 @@
 
 import React, { useState } from 'react';
 import { Terminal, Copy, Check, Server, Database, Code, Cpu, ExternalLink, HelpCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function ApiIntegrationGuide() {
   const [showHelp, setShowHelp] = useState(false);
@@ -252,14 +253,15 @@ if __name__ == "__main__":
               <Cpu size={14} className="text-indigo-400" />
               Adaptador Python (<code className="text-amber-400">load_image_adapter.py</code>)
             </span>
-            <button
+            <Button
+              variant="ghost"
+              className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-md text-xs gap-1"
               onClick={() => copyToClipboard(pythonAdapterCode, 'python')}
-              className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-md transition-colors text-xs flex items-center gap-1"
               id="btn-copy-python"
             >
               {copiedSection === 'python' ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
               {copiedSection === 'python' ? 'Copiado' : 'Copiar'}
-            </button>
+            </Button>
           </div>
           <div className="relative">
             <pre className="bg-slate-950 text-slate-300 font-mono text-[11px] md:text-xs p-4 rounded-xl overflow-x-auto max-h-62.5 border border-slate-800/80 scrollbar-thin">
@@ -274,14 +276,15 @@ if __name__ == "__main__":
               <Server size={14} className="text-amber-400" />
               Rutero de Backend sugerido (<code className="text-amber-400">server.ts / api.ts</code>)
             </span>
-            <button
+            <Button
+              variant="ghost"
+              className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-md text-xs gap-1"
               onClick={() => copyToClipboard(expressCode, 'express')}
-              className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-md transition-colors text-xs flex items-center gap-1"
               id="btn-copy-express"
             >
               {copiedSection === 'express' ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
               {copiedSection === 'express' ? 'Copiado' : 'Copiar'}
-            </button>
+            </Button>
           </div>
           <div className="relative">
             <pre className="bg-slate-950 text-slate-300 font-mono text-[11px] md:text-xs p-4 rounded-xl overflow-x-auto max-h-75 border border-slate-800/80 scrollbar-thin">

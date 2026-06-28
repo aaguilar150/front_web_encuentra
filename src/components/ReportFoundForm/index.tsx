@@ -3,6 +3,8 @@ import { UserRoundPlus, Camera, AlertCircle, MapPin, Phone, Building, Check, Hea
 import { useForm, } from '@tanstack/react-form';
 import { useSelector } from '@tanstack/react-store';
 
+import { Button } from '@/components/ui/button';
+import ChildToggle from '@/components/ui/child-toggle';
 import { reportarEncontrado, ResultadoRegistro } from '@/api';
 import PhotoUploader, { Photo } from '../form/PhotoUploader';
 import HelpModal, { HelpStep } from '../form/HelpModal';
@@ -122,15 +124,16 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
             <p className="text-sm text-slate-500 leading-snug">Agrega a una persona encontrada a la base de datos.</p>
           </div>
         </div>
-        <button
-          type="button"
+        <Button
+          variant="outline"
+          size="sm"
+          className="bg-slate-50"
           onClick={() => setShowHelp(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 transition-all"
           id="btn-toggle-report-help"
         >
           <HelpCircle size={15} />
           ¿CÓMO FUNCIONA?
-        </button>
+        </Button>
       </div>
 
       <HelpModal
@@ -171,13 +174,15 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
           )}
 
           <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
-            <button
+            <Button
+              variant="dark"
+              size="sm"
+              className="rounded-lg"
               onClick={handleResetForm}
-              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg transition-all"
               id="btn-add-more"
             >
               Reportar Otra Persona
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
@@ -233,20 +238,10 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
                   </span>
                   <p className="text-xs text-slate-500 mt-1">Actívalo para aplicar protección de identidad (oculta nombre y apellido).</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => field.handleChange(!field.state.value)}
-                  aria-pressed={field.state.value}
-                  className={`px-6 py-3 rounded-xl text-sm font-extrabold transition-all duration-300 shrink-0 flex items-center justify-center gap-2 shadow-sm border-2 ${
-                    field.state.value
-                      ? 'bg-amber-500 border-amber-500 hover:bg-amber-600 text-white shadow-[0_4px_20px_rgba(245,158,11,0.4)] scale-105'
-                      : 'bg-white border-amber-400 text-amber-700 hover:bg-amber-100 hover:border-amber-500 hover:shadow-md'
-                  }`}
-                  id="btn-toggle-child"
-                >
-                  {field.state.value ? <Check size={18} /> : <Baby size={18} />}
-                  {field.state.value ? 'MENOR PROTEGIDO' : 'SÍ, ES MENOR'}
-                </button>
+                <ChildToggle
+                  value={field.state.value}
+                  onChange={field.handleChange}
+                />
               </div>
             )}
           </form.Field>
@@ -422,15 +417,15 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
             <span className="text-rose-500">*</span> Campos obligatorios
           </p>
 
-          <button
+          <Button
             type="submit"
+            className="w-full"
             disabled={isSubmitting}
-            className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-base rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
             id="btn-submit-report"
           >
             <UserRoundPlus size={20} />
             {isSubmitting ? 'Registrando…' : 'Reportar Persona Encontrada'}
-          </button>
+          </Button>
         </form>
       )}
     </div>

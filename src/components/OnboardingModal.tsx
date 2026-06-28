@@ -6,6 +6,7 @@
  */
 import React from 'react';
 import { UserRoundSearch , UserRoundPlus, Heart, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface Props {
   onClose: () => void;
@@ -18,14 +19,15 @@ export default function OnboardingModal({ onClose }: Props) {
         className="bg-white rounded-2xl shadow-2xl w-full max-w-lg relative p-6 sm:p-7 max-h-[90vh] overflow-y-auto animate-[fadeIn_0.2s_ease-out]"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-4 right-4 bg-slate-100 hover:bg-slate-200"
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 p-1.5 rounded-full transition-all"
           aria-label="Cerrar"
         >
           <X size={18} />
-        </button>
+        </Button>
 
         <div className="text-center mb-5">
           <div className="relative w-12 h-12 rounded-xl shadow-sm overflow-hidden flex items-center justify-center mx-auto mb-3">
@@ -66,13 +68,13 @@ export default function OnboardingModal({ onClose }: Props) {
           </div>
         </div>
 
-        <button
-          type="button"
+        <Button
+          variant="dark"
+          className="w-full mt-5"
           onClick={onClose}
-          className="w-full mt-5 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl transition-all shadow-md"
         >
           Entendido, empezar
-        </button>
+        </Button>
       </div>
     </div>
   );

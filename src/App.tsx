@@ -30,6 +30,7 @@ import SearchMissingForm from './components/SearchMissingForm';
 import ReportFoundForm from './components/ReportFoundForm';
 import ApiIntegrationGuide from './components/ApiIntegrationGuide';
 import OnboardingModal from './components/OnboardingModal';
+import { Button } from '@/components/ui/button';
 import { reportarFalla } from './api';
 
 // Emergency helplines for Venezuelan civil support
@@ -184,13 +185,14 @@ export default function App() {
             </div>
 
          
-            <button
+            <Button
+              variant="outline"
+              className="bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
               onClick={openErrorModal}
-              className="flex items-center gap-1.5 sm:gap-2 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm shrink-0 whitespace-nowrap"
             >
               <AlertTriangle size={14} />
               <span>Reportar Error</span>
-            </button>
+            </Button>
           </div>
         </div>
       </header>
@@ -230,7 +232,7 @@ export default function App() {
 
 
 
-        <Activity name="search-form" mode={activeTab === 'buscar' ? 'visible' : 'hidden'}>
+        <Activity name="search-form" mode={activeTab === 'buscar' ? 'visible' : 'hidden'}> 
           <SearchMissingForm />
         </Activity>
 
@@ -239,7 +241,6 @@ export default function App() {
             onAddPerson={handleAddPerson} 
           />
         </Activity>
-
         {activeTab === 'api' && (
           <ApiIntegrationGuide />
         )}
@@ -347,12 +348,13 @@ export default function App() {
                 </div>
                 <p className="text-sm font-semibold text-slate-800">¡Gracias por tu reporte!</p>
                 <p className="text-xs text-slate-500 mt-1">Lo revisaremos pronto.</p>
-                <button
+                <Button
+                  variant="dark"
+                  className="px-4 py-2 text-sm rounded-lg"
                   onClick={() => setIsErrorModalOpen(false)}
-                  className="mt-5 px-4 py-2 text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-lg transition-all"
                 >
                   Cerrar
-                </button>
+                </Button>
               </div>
             ) : (
               <>
@@ -373,19 +375,21 @@ export default function App() {
                   </p>
                 )}
                 <div className="mt-4 flex justify-end gap-3">
-                  <button
+                  <Button
+                    variant="ghost"
+                    className="px-4 py-2 text-sm rounded-lg"
                     onClick={() => setIsErrorModalOpen(false)}
-                    className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 rounded-lg transition-all"
                   >
                     Cancelar
-                  </button>
-                  <button
-                    onClick={submitFalla}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="px-4 py-2 text-sm rounded-lg"
                     disabled={errorText.trim().length < 3 || errorSending}
-                    className="px-4 py-2 text-sm font-semibold bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg shadow-sm transition-all"
+                    onClick={submitFalla}
                   >
                     {errorSending ? 'Enviando…' : 'Enviar Reporte'}
-                  </button>
+                  </Button>
                 </div>
               </>
             )}

@@ -6,6 +6,7 @@
  */
 import React from 'react';
 import { HelpCircle, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export interface HelpStep {
   n: number;
@@ -37,13 +38,14 @@ export default function HelpModal({ open, onClose, title, steps, accent, id }: P
         className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl relative p-5 sm:p-6 max-h-[90vh] overflow-y-auto animate-[fadeIn_0.2s_ease-out]"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-4 right-4 bg-slate-100 hover:bg-slate-200"
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 p-1.5 rounded-full transition-all"
         >
           <X size={18} />
-        </button>
+        </Button>
         <h3 className={`text-base font-bold ${a.title} flex items-center gap-2 pr-8 mb-5`}>
           <HelpCircle size={18} className={`${a.icon} shrink-0`} />
           {title}

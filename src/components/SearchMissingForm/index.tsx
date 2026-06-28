@@ -10,6 +10,7 @@ import HelpModal, { HelpStep } from '../form/HelpModal';
 import DocumentInput from '../form/DocumentInput';
 import { inputClasses } from '../form/Field';
 import { fieldError } from '../form/fieldError';
+import { Button } from '@/components/ui/button';
 import { searchByImageSchema, searchByImageDefaults,  } from './missing.schema';
 
 import type{ FoundPerson, MatchResult } from '@/types';
@@ -128,6 +129,8 @@ export default function SearchMissingForm() {
 
   const photos = useSelector(form.store, (state) => state.values.photos);
 
+  
+
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-6" id="search-missing-view">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 mb-4 border-b border-slate-100">
@@ -140,15 +143,16 @@ export default function SearchMissingForm() {
             <p className="text-sm text-slate-500 leading-snug">Sube una foto y busca coincidencias por reconocimiento facial.</p>
           </div>
         </div>
-        <button
-          type="button"
+        <Button
+          variant="outline"
+          size="sm"
+          className="bg-slate-50"
           onClick={() => setShowHelp(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 transition-all"
           id="btn-toggle-help"
         >
           <HelpCircle size={15} />
           ¿CÓMO FUNCIONA?
-        </button>
+        </Button>
       </div>
 
       <HelpModal
@@ -211,7 +215,7 @@ export default function SearchMissingForm() {
                         placeholder="Nombre completo de quien buscas"
                         maxLength={80}
                         value={field.state.value}
-                        onChange={(e) => { field.handleChange(e.target.value); field.setMeta((prev) => ({ ...prev, errors: [] })); }}
+                        onChange={(e) => { field.handleChange(e.target.value); field.setMeta((prev) => ({ ...prev, errors: [] })); form.setFieldMeta('qDocNumero', (prev) => ({ ...prev, errors: [] })); }}
                         className={inputClasses('rose', !!field.state.meta.errors?.[0])}
                       />
                     </div>
@@ -227,7 +231,7 @@ export default function SearchMissingForm() {
                           tipo={qDocTipo}
                           numero={field.state.value}
                           onTipo={(v) => form.setFieldValue('qDocTipo', v)}
-                          onNumero={(v) => { field.handleChange(v); field.setMeta((prev) => ({ ...prev, errors: [] })); }}
+                          onNumero={(v) => { field.handleChange(v); field.setMeta((prev) => ({ ...prev, errors: [] })); form.setFieldMeta('qNombre', (prev) => ({ ...prev, errors: [] })); }}
                           accent="rose"
                           error={!!qDocNumeroError}
                           numeroId="search-doc"
@@ -260,15 +264,16 @@ export default function SearchMissingForm() {
               <p className="text-[11px] text-slate-400">Reconocimiento facial en proceso, no cierres esta ventana.</p>
             </div>
           ) : (
-            <button
+            <Button
+              variant="rose"
               type="submit"
+              className="w-full"
               disabled={isSubmitting}
-              className="w-full py-3.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-base rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
               id="btn-trigger-search"
             >
               <UserRoundSearch size={20} />
               Iniciar Búsqueda
-            </button>
+            </Button>
           )}
         </form>
       ) : (
@@ -278,14 +283,15 @@ export default function SearchMissingForm() {
               <p className="text-xs font-bold text-rose-800 uppercase tracking-wider">Comparación completada con éxito</p>
               <h3 className="text-sm font-semibold text-slate-800 mt-0.5">Se encontraron {searchResults.length} registros coincidentes.</h3>
             </div>
-            <button
+            <Button
+              variant="rose"
+              className="w-full sm:w-auto py-2.5"
               onClick={handleResetSearch}
-              className="w-full sm:w-auto py-2.5 px-5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2 shrink-0"
               id="btn-re-search"
             >
               <UserRoundSearch size={18} />
               Buscar de nuevo
-            </button>
+            </Button>
           </div>
 
           <div className="space-y-3">
@@ -343,25 +349,25 @@ export default function SearchMissingForm() {
                         <div className="flex items-center justify-between gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
                           <span className="text-xs font-semibold text-slate-600">¿Reportar como falso?</span>
                           <div className="flex items-center gap-1.5 shrink-0">
-                            <button
-                              type="button"
+                            <Button
+                              variant="toggleOn"
+                              className="px-2.5 py-1 rounded-md text-[11px]"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setReportedIds((prev) => [...prev, person.id]);
                                 setConfirmingId(null);
                                 reportarPublicacion(person.id).catch(() => {});
                               }}
-                              className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-500 hover:bg-amber-600 text-white transition-all"
                             >
                               Sí
-                            </button>
-                            <button
-                              type="button"
+                            </Button>
+                            <Button
+                              variant="outline"
+                              className="px-2.5 py-1 rounded-md text-[11px] bg-slate-100"
                               onClick={(e) => { e.stopPropagation(); setConfirmingId(null); }}
-                              className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 transition-all"
                             >
                               No
-                            </button>
+                            </Button>
                           </div>
                         </div>
                       ) : (
@@ -369,15 +375,16 @@ export default function SearchMissingForm() {
                           <span className="inline-flex items-center gap-1 text-sm font-semibold text-rose-600 group-hover:gap-2 transition-all">
                             Ver información <ArrowRight size={15} />
                           </span>
-                          <button
-                            type="button"
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={(e) => { e.stopPropagation(); setConfirmingId(person.id); }}
-                            className="p-1.5 rounded-full text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-all shrink-0"
+                            className="text-slate-400 hover:text-amber-600 hover:bg-amber-50"
                             title="Reportar como falso"
                             aria-label="Reportar como falso"
                           >
                             <Flag size={15} />
-                          </button>
+                          </Button>
                         </div>
                       )}
                     </div>
@@ -388,23 +395,23 @@ export default function SearchMissingForm() {
 
             {totalPages > 1 && (
               <div className="flex items-center justify-between gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                <Button
+                  variant="outline"
+                  size="xs"
                   disabled={page === 0}
-                  className="inline-flex items-center gap-1 px-3.5 py-2 rounded-lg text-sm font-semibold border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
                 >
                   <ArrowRight size={15} className="rotate-180" /> Anterior
-                </button>
+                </Button>
                 <span className="text-xs font-semibold text-slate-500 tabular-nums">Página {page + 1} de {totalPages}</span>
-                <button
-                  type="button"
-                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                <Button
+                  variant="outline"
+                  size="xs"
                   disabled={page >= totalPages - 1}
-                  className="inline-flex items-center gap-1 px-3.5 py-2 rounded-lg text-sm font-semibold border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                 >
                   Siguiente <ArrowRight size={15} />
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -430,12 +437,14 @@ export default function SearchMissingForm() {
                   <p className="text-xs text-white/80 font-mono mt-0.5">Cédula: {selectedCandidate.ci}</p>
                 )}
               </div>
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-3 right-3 text-white bg-black/30 hover:bg-black/50 backdrop-blur-sm"
                 onClick={() => setSelectedCandidate(null)}
-                className="absolute top-3 right-3 text-white bg-black/30 hover:bg-black/50 p-1.5 rounded-full transition-all backdrop-blur-sm"
               >
                 <X size={18} />
-              </button>
+              </Button>
             </div>
 
             <div className="overflow-y-auto p-5 sm:p-6 space-y-4 text-sm" id="candidate-detail-pane">

@@ -7,6 +7,7 @@
  */
 import React, { useState } from 'react';
 import { MapPin, ChevronDown, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { inputClasses } from './Field';
 
 const LOCATIONS_KEY = 'ven_saved_locations';
@@ -87,15 +88,16 @@ export default function LocationCombobox({ value, onChange, options, onForget, a
                 <MapPin size={14} className="text-slate-400 shrink-0" />
                 {loc}
               </button>
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="text-slate-400 hover:text-rose-600 hover:bg-rose-50"
                 onMouseDown={(e) => { e.preventDefault(); onForget(loc); }}
-                className="p-1 rounded-full text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all shrink-0"
                 aria-label={`Borrar ${loc}`}
                 title="Borrar ubicación guardada"
               >
                 <X size={14} strokeWidth={3} />
-              </button>
+              </Button>
             </div>
           ))}
         </div>
