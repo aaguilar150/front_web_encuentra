@@ -7,13 +7,18 @@ interface ChildToggleProps {
 
 export default function ChildToggle({ isChild, onToggle }: ChildToggleProps) {
   return (
-    <div className="bg-amber-50/40 border-2 border-amber-200/60 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm" id="child-toggle-container">
+    <div
+      className="bg-amber-50/40 border-2 border-amber-200/60 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm"
+      id="child-toggle-container"
+    >
       <div>
         <span className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
           <Baby size={20} className="text-amber-500" />
           ¿Es menor de edad?
         </span>
-        <p className="text-xs text-slate-500 mt-1">Actívalo para aplicar protección de identidad (oculta nombre y apellido).</p>
+        <p className="text-xs text-slate-500 mt-1">
+          Actívalo para aplicar protección de identidad (oculta nombre y apellido).
+        </p>
       </div>
       <button
         type="button"

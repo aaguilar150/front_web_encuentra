@@ -36,10 +36,7 @@ describe('usePhotoUpload', () => {
 
     expect(createObjectURL).toHaveBeenCalledTimes(2);
     expect(result.current.photos).toHaveLength(2);
-    expect(result.current.photos.map((photo) => photo.url)).toEqual([
-      'blob:one.png',
-      'blob:two.jpg',
-    ]);
+    expect(result.current.photos.map((photo) => photo.url)).toEqual(['blob:one.png', 'blob:two.jpg']);
   });
 
   it('revokes the preview URL when a photo is removed', async () => {
@@ -67,10 +64,7 @@ describe('usePhotoUpload', () => {
     const { result, unmount } = renderHook(() => useHarness(3));
 
     await act(async () => {
-      await result.current.addFiles([
-        makeFile('one.png', 'image/png'),
-        makeFile('two.jpg', 'image/jpeg'),
-      ]);
+      await result.current.addFiles([makeFile('one.png', 'image/png'), makeFile('two.jpg', 'image/jpeg')]);
     });
 
     act(() => {

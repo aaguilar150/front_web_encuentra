@@ -11,7 +11,6 @@ import type { SearchDocTipo } from '@/components/SearchMissingForm/missing.schem
 
 export const DOC_TYPES = ['V', 'E', 'J', 'P', 'G', 'C', 'R'];
 
-
 interface Props {
   tipo: SearchDocTipo;
   numero: string;
@@ -29,9 +28,16 @@ export default function DocumentInput({ tipo, numero, onTipo, onNumero, accent, 
 
   return (
     <div className="flex gap-2">
-      <select value={tipo} onChange={(e) => onTipo(e.target.value as SearchDocTipo)} className={selectCls} aria-label="Tipo de documento">
+      <select
+        value={tipo}
+        onChange={(e) => onTipo(e.target.value as SearchDocTipo)}
+        className={selectCls}
+        aria-label="Tipo de documento"
+      >
         {DOC_TYPES.map((t) => (
-          <option key={t} value={t}>{t}</option>
+          <option key={t} value={t}>
+            {t}
+          </option>
         ))}
       </select>
       <input

@@ -8,10 +8,12 @@ export default function Footer() {
       <FlagBar />
       <div className="max-w-7xl mx-auto p-4 sm:px-6 lg:px-8 py-6 flex flex-col justify-center text-center space-y-2">
         <h3 className="text-sm sm:text-base font-bold text-slate-800 flex flex-wrap items-center justify-center gap-1.5">
-          Hecho con <Heart size={18} className="fill-rose-500 text-rose-500 animate-pulse" /> para el soporte humanitario en Venezuela
+          Hecho con <Heart size={18} className="fill-rose-500 text-rose-500 animate-pulse" /> para el soporte
+          humanitario en Venezuela
         </h3>
         <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
-          Plataforma dedicada a facilitar el reencuentro familiar en situaciones de emergencia. Cumplimos con los lineamientos internacionales de protección de identidad para menores y heridos desorientados.
+          Plataforma dedicada a facilitar el reencuentro familiar en situaciones de emergencia. Cumplimos con los
+          lineamientos internacionales de protección de identidad para menores y heridos desorientados.
         </p>
 
         <div className="pt-4 flex flex-col items-center gap-3">

@@ -51,12 +51,21 @@ export default function LocationCombobox({ value, onChange, options, onForget, a
 
       {open && options.length > 0 && (
         <div className="absolute z-20 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden max-h-56 overflow-y-auto">
-          <p className="px-3 pt-2 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wide">Ubicaciones guardadas</p>
+          <p className="px-3 pt-2 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+            Ubicaciones guardadas
+          </p>
           {options.map((loc) => (
-            <div key={loc} className="flex items-center justify-between gap-2 px-3 py-2 hover:bg-blue-50 transition-all">
+            <div
+              key={loc}
+              className="flex items-center justify-between gap-2 px-3 py-2 hover:bg-blue-50 transition-all"
+            >
               <button
                 type="button"
-                onMouseDown={(e) => { e.preventDefault(); onChange(loc); setOpen(false); }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  onChange(loc);
+                  setOpen(false);
+                }}
                 className="flex-1 text-left text-sm text-slate-700 truncate flex items-center gap-2"
               >
                 <MapPin size={14} className="text-slate-400 shrink-0" />
@@ -66,7 +75,10 @@ export default function LocationCombobox({ value, onChange, options, onForget, a
                 variant="ghost"
                 size="icon-sm"
                 className="text-slate-400 hover:text-rose-600 hover:bg-rose-50"
-                onMouseDown={(e) => { e.preventDefault(); onForget(loc); }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  onForget(loc);
+                }}
                 aria-label={`Borrar ${loc}`}
                 title="Borrar ubicación guardada"
               >

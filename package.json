@@ -8,7 +8,11 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit",
+    "lint": "tsc --noEmit && eslint src/",
+    "lint:ts": "tsc --noEmit",
+    "lint:es": "eslint src/",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json}\"",
     "test": "vitest",
     "test:run": "vitest run"
   },
@@ -33,6 +37,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.3.2",
@@ -43,11 +48,15 @@
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.5.2",
     "esbuild": "^0.28.1",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
     "jsdom": "^26.1.0",
     "msw": "^2.10.4",
+    "prettier": "^3.9.1",
     "tailwindcss": "^4.3.1",
     "tsx": "^4.22.4",
     "typescript": "~6.0.3",
+    "typescript-eslint": "^8.62.0",
     "vite": "^8.1.0",
     "vitest": "^4.1.9"
   },

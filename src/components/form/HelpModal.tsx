@@ -16,7 +16,12 @@ export interface HelpStep {
 
 const ACCENTS = {
   rose: { title: 'text-rose-900', icon: 'text-rose-500', card: 'bg-rose-50/50 border-rose-100', num: 'bg-rose-500' },
-  emerald: { title: 'text-emerald-950', icon: 'text-emerald-600', card: 'bg-emerald-50/50 border-emerald-100', num: 'bg-emerald-600' },
+  emerald: {
+    title: 'text-emerald-950',
+    icon: 'text-emerald-600',
+    card: 'bg-emerald-50/50 border-emerald-100',
+    num: 'bg-emerald-600',
+  },
 };
 
 interface Props {
@@ -33,7 +38,11 @@ export default function HelpModal({ open, onClose, title, steps, accent, id }: P
   const a = ACCENTS[accent];
 
   return (
-    <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} id={id}>
+    <div
+      className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+      onClick={onClose}
+      id={id}
+    >
       <div
         className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl relative p-5 sm:p-6 max-h-[90vh] overflow-y-auto animate-[fadeIn_0.2s_ease-out]"
         onClick={(e) => e.stopPropagation()}
@@ -53,7 +62,11 @@ export default function HelpModal({ open, onClose, title, steps, accent, id }: P
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {steps.map((s) => (
             <div key={s.n} className={`${a.card} p-4 rounded-xl border flex gap-3`}>
-              <span className={`inline-flex w-6 h-6 items-center justify-center rounded-full ${a.num} text-white text-xs font-black shrink-0`}>{s.n}</span>
+              <span
+                className={`inline-flex w-6 h-6 items-center justify-center rounded-full ${a.num} text-white text-xs font-black shrink-0`}
+              >
+                {s.n}
+              </span>
               <div className="space-y-1">
                 <h4 className="text-sm font-bold text-slate-800">{s.t}</h4>
                 <p className="text-xs text-slate-500 leading-snug">{s.d}</p>

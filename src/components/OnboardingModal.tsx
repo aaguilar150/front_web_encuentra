@@ -5,7 +5,7 @@
  * Modal de bienvenida que aparece solo la primera vez que se abre la app.
  */
 import React from 'react';
-import { UserRoundSearch , UserRoundPlus, Heart, X } from 'lucide-react';
+import { UserRoundSearch, UserRoundPlus, Heart, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface Props {
@@ -14,7 +14,10 @@ interface Props {
 
 export default function OnboardingModal({ onClose }: Props) {
   return (
-    <div className="fixed inset-0 z-80 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-80 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
       <div
         className="bg-white rounded-2xl shadow-2xl w-full max-w-lg relative p-6 sm:p-7 max-h-[90vh] overflow-y-auto animate-[fadeIn_0.2s_ease-out]"
         onClick={(e) => e.stopPropagation()}
@@ -45,7 +48,7 @@ export default function OnboardingModal({ onClose }: Props) {
         <div className="grid grid-cols-1 gap-3">
           <div className="bg-rose-50/60 border border-rose-100 rounded-xl p-4 flex gap-3">
             <div className="w-10 h-10 rounded-lg bg-rose-600 text-white flex items-center justify-center shrink-0">
-              <UserRoundSearch  size={20} />
+              <UserRoundSearch size={20} />
             </div>
             <div>
               <h3 className="text-sm font-bold text-rose-900">Buscar familiar</h3>
@@ -62,17 +65,14 @@ export default function OnboardingModal({ onClose }: Props) {
             <div>
               <h3 className="text-sm font-bold text-blue-900">Reportar persona encontrada</h3>
               <p className="text-xs text-slate-600 leading-snug mt-0.5">
-                ¿Ayudaste a alguien? Registra su foto y sus datos para que su familia pueda dar con ella. Reporta solo casos reales.
+                ¿Ayudaste a alguien? Registra su foto y sus datos para que su familia pueda dar con ella. Reporta solo
+                casos reales.
               </p>
             </div>
           </div>
         </div>
 
-        <Button
-          variant="dark"
-          className="w-full mt-5"
-          onClick={onClose}
-        >
+        <Button variant="dark" className="w-full mt-5" onClick={onClose}>
           Entendido, empezar
         </Button>
       </div>

@@ -16,11 +16,18 @@ export default function Header({ onOpenErrorReport }: HeaderProps) {
                 <div className="flex-1 bg-blue-600"></div>
                 <div className="flex-1 bg-rose-600"></div>
               </div>
-              <Heart size={18} className="relative text-white fill-white sm:w-5 sm:h-5 drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)] animate-pulse" />
+              <Heart
+                size={18}
+                className="relative text-white fill-white sm:w-5 sm:h-5 drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)] animate-pulse"
+              />
             </div>
             <div className="min-w-0">
-              <h1 className="text-sm sm:text-base font-black text-slate-800 tracking-tight leading-none truncate">VzlaEncuentra</h1>
-              <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 truncate">S.O.S. - Búsqueda de personas</p>
+              <h1 className="text-sm sm:text-base font-black text-slate-800 tracking-tight leading-none truncate">
+                VzlaEncuentra
+              </h1>
+              <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 truncate">
+                S.O.S. - Búsqueda de personas
+              </p>
             </div>
           </div>
 

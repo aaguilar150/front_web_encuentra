@@ -37,7 +37,9 @@ export default function MatchGrid({
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-rose-50/50 border border-rose-100 rounded-xl p-5">
         <div>
           <p className="text-xs font-bold text-rose-800 uppercase tracking-wider">Comparación completada con éxito</p>
-          <h3 className="text-sm font-semibold text-slate-800 mt-0.5">Se encontraron {results.length} registros coincidentes.</h3>
+          <h3 className="text-sm font-semibold text-slate-800 mt-0.5">
+            Se encontraron {results.length} registros coincidentes.
+          </h3>
         </div>
         <button
           onClick={onResetSearch}
@@ -56,7 +58,9 @@ export default function MatchGrid({
       )}
 
       <div className="space-y-3">
-        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Posibles coincidencias — toca una para ver sus datos:</p>
+        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+          Posibles coincidencias — toca una para ver sus datos:
+        </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {pageItems.map((result, index) => {
             const person = result.foundPerson;
@@ -77,7 +81,9 @@ export default function MatchGrid({
                   }
                 }}
                 className={`group text-left bg-white rounded-2xl border overflow-hidden transition-all ${
-                  isReported ? 'border-slate-200 opacity-60 cursor-default' : 'border-slate-200 hover:border-rose-300 hover:shadow-lg cursor-pointer'
+                  isReported
+                    ? 'border-slate-200 opacity-60 cursor-default'
+                    : 'border-slate-200 hover:border-rose-300 hover:shadow-lg cursor-pointer'
                 }`}
                 id={`match-card-${index}`}
               >
@@ -105,7 +111,10 @@ export default function MatchGrid({
                       <Flag size={13} /> Reportado como falso. ¡Gracias!
                     </p>
                   ) : isConfirming ? (
-                    <div className="flex items-center justify-between gap-2 pt-1" onClick={(event) => event.stopPropagation()}>
+                    <div
+                      className="flex items-center justify-between gap-2 pt-1"
+                      onClick={(event) => event.stopPropagation()}
+                    >
                       <span className="text-xs font-semibold text-slate-600">¿Reportar como falso?</span>
                       <div className="flex items-center gap-1.5 shrink-0">
                         <button
@@ -165,7 +174,9 @@ export default function MatchGrid({
             >
               <ArrowRight size={15} className="rotate-180" /> Anterior
             </button>
-            <span className="text-xs font-semibold text-slate-500 tabular-nums">Página {page + 1} de {totalPages}</span>
+            <span className="text-xs font-semibold text-slate-500 tabular-nums">
+              Página {page + 1} de {totalPages}
+            </span>
             <button
               type="button"
               onClick={() => onPageChange(Math.min(totalPages - 1, page + 1))}

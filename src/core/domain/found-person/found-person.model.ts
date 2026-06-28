@@ -3,11 +3,7 @@
  * Sin dependencias de capas externas.
  */
 
-export type FoundPersonStatus =
-  | 'refugiado'
-  | 'hospitalizado'
-  | 'desconocido'
-  | 'reunificado';
+export type FoundPersonStatus = 'refugiado' | 'hospitalizado' | 'desconocido' | 'reunificado';
 
 export interface FoundPerson {
   id: string;
@@ -47,8 +43,8 @@ export function buildFoundPerson(
 ): FoundPerson {
   return {
     id: idFactory(),
-    name: input.isChild ? 'Niño/a Desconocido (Protegido)' : (input.name.trim() || 'Desconocido'),
-    ci: input.isChild ? 'No Aplica (Menor de edad)' : (input.ci.trim() || 'Desconocido'),
+    name: input.isChild ? 'Niño/a Desconocido (Protegido)' : input.name.trim() || 'Desconocido',
+    ci: input.isChild ? 'No Aplica (Menor de edad)' : input.ci.trim() || 'Desconocido',
     hospitalName: input.hospitalName.trim(),
     locationAddress: input.isChild ? 'No revelada por protección al menor' : input.locationAddress.trim(),
     contactPhone: input.contactPhone.trim(),

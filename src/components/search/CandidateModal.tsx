@@ -12,7 +12,10 @@ export default function CandidateModal({ candidate, onClose, waLink }: Candidate
   if (!candidate) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm transition-all" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm transition-all"
+      onClick={onClose}
+    >
       <div
         className="bg-white rounded-2xl shadow-2xl w-full max-w-md relative flex flex-col max-h-[90vh] overflow-hidden animate-[fadeIn_0.2s_ease-out]"
         onClick={(event) => event.stopPropagation()}
@@ -43,7 +46,9 @@ export default function CandidateModal({ candidate, onClose, waLink }: Candidate
             <span className="font-bold text-slate-700 block mb-1">Ubicación Actual:</span>
             <p className="text-slate-600 flex items-start gap-1.5">
               <MapPin size={16} className="text-rose-500 shrink-0 mt-0.5" />
-              <span><strong>{candidate.hospitalName}</strong> - {candidate.locationAddress}</span>
+              <span>
+                <strong>{candidate.hospitalName}</strong> - {candidate.locationAddress}
+              </span>
             </p>
           </div>
 

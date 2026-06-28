@@ -1,11 +1,5 @@
 import { INITIAL_FOUND_PERSONS } from '../data';
-import type {
-  AlertaFamiliar,
-  Candidato,
-  ReporteCreado,
-  ResultadoBusqueda,
-  ResultadoRegistro,
-} from '../api';
+import type { AlertaFamiliar, Candidato, ReporteCreado, ResultadoBusqueda, ResultadoRegistro } from '../api';
 import type { FoundPerson } from '../types';
 
 interface SearchInput {

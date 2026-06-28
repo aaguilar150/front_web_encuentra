@@ -24,7 +24,9 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'buscar' | 'reportar' | 'api'>('reportar');
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('ven_onboarded'));
   const [foundPersons, setFoundPersons] = useState<FoundPerson[]>([]);
-  const [lastUpdated, setLastUpdated] = useState<string>(() => localStorage.getItem('ven_disaster_last_updated') || new Date().toISOString());
+  const [lastUpdated, setLastUpdated] = useState<string>(
+    () => localStorage.getItem('ven_disaster_last_updated') || new Date().toISOString(),
+  );
   const [now, setNow] = useState(() => Date.now());
   const [stats, setStats] = useState({
     totalFound: 142,
@@ -119,11 +121,11 @@ export default function App() {
         <div className={activeTab === 'buscar' ? 'block' : 'hidden'}>
           <SearchMissingForm />
         </div>
-        <div className={activeTab === 'reportar' ? 'visible' : 'hidden'}  >
+        <div className={activeTab === 'reportar' ? 'visible' : 'hidden'}>
           <ReportFoundForm onAddPerson={handleAddPerson} />
         </div>
-        
-        <Activity mode={activeTab === 'api' ? 'visible' : 'hidden'}  >
+
+        <Activity mode={activeTab === 'api' ? 'visible' : 'hidden'}>
           <ApiIntegrationGuide />
         </Activity>
 

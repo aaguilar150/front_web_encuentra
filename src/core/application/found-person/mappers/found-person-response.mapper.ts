@@ -20,5 +20,4 @@ export function toFoundPerson(dto: FoundPersonResponseDto): FoundPerson {
 }
 
 /** Para GET /api/found-persons (list). */
-export const mapFoundPersonList = (dtos: FoundPersonResponseDto[]): FoundPerson[] =>
-  dtos.map(toFoundPerson);
+export const mapFoundPersonList = (dtos: FoundPersonResponseDto[]): FoundPerson[] => dtos.map(toFoundPerson);

@@ -11,10 +11,7 @@ import { httpClient } from '../http/http-client';
 export function createSearchHttpRepository(): SearchRepository {
   return {
     async searchByImage(input: SearchByImageInput) {
-      const dtos = await httpClient.post<MatchResultResponseDto[]>(
-        '/search',
-        toSearchRequestDto(input),
-      );
+      const dtos = await httpClient.post<MatchResultResponseDto[]>('/search', toSearchRequestDto(input));
       return mapMatchResultList(dtos);
     },
   };
