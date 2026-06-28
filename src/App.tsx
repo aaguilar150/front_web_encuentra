@@ -187,10 +187,11 @@ export default function App() {
          
             <Button
               variant="outline"
+              size='sm'
               className="bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
               onClick={openErrorModal}
             >
-              <AlertTriangle size={14} />
+              <AlertTriangle />
               <span>Reportar Error</span>
             </Button>
           </div>
