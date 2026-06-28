@@ -1,15 +1,19 @@
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import { UserRoundPlus, Camera, AlertCircle, MapPin, Phone, Building, Check, Heart, User, HelpCircle, Baby } from 'lucide-react';
-import { FoundPerson } from '../types';
-import { reportarEncontrado, ResultadoRegistro } from '../api';
-import { useForm, useStore } from '@tanstack/react-form';
-import PhotoUploader, { Photo } from './form/PhotoUploader';
-import HelpModal, { HelpStep } from './form/HelpModal';
-import DocumentInput from './form/DocumentInput';
-import LocationCombobox, { useSavedLocations } from './form/LocationCombobox';
-import Field, { inputClasses } from './form/Field';
-import { fieldError } from './form/fieldError';
-import { reportFoundSchema, reportFoundDefaults, PHONE_PREFIXES, type DocTipo, type TelPrefijo } from './ReportFoundForm.schema';
+import { useForm, } from '@tanstack/react-form';
+import { useSelector } from '@tanstack/react-store';
+
+import { reportarEncontrado, ResultadoRegistro } from '@/api';
+import PhotoUploader, { Photo } from '../form/PhotoUploader';
+import HelpModal, { HelpStep } from '../form/HelpModal';
+import DocumentInput from '../form/DocumentInput';
+import LocationCombobox, { useSavedLocations } from '../form/LocationCombobox';
+import Field, { inputClasses } from '../form/Field';
+import { fieldError } from '../form/fieldError';
+
+import { reportFoundSchema, reportFoundDefaults, PHONE_PREFIXES, type DocTipo, type TelPrefijo } from './found.schema';
+
+import type{ FoundPerson } from '@/types';
 
 interface ReportFoundFormProps {
   onAddPerson: (person: FoundPerson) => void;
@@ -83,11 +87,11 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
       }
     },
   });
-  const esMenor = useStore(form.store, (state) => state.values.esMenor);
-  const docTipo = useStore(form.store, (state) => state.values.docTipo);
-  const docRespTipo = useStore(form.store, (state) => state.values.docRespTipo);
-  const telPrefijo = useStore(form.store, (state) => state.values.telPrefijo);
-  const isSubmitting = useStore(form.store, (state) => state.isSubmitting);
+  const esMenor = useSelector(form.store, (state) => state.values.esMenor);
+  const docTipo = useSelector(form.store, (state) => state.values.docTipo);
+  const docRespTipo = useSelector(form.store, (state) => state.values.docRespTipo);
+  const telPrefijo = useSelector(form.store, (state) => state.values.telPrefijo);
+  const isSubmitting = useSelector(form.store, (state) => state.isSubmitting);
   const clearTelNumeroMeta = () => form.setFieldMeta('telNumero', (prev) => ({ ...prev, errors: [] }));
 
   const addFiles = (files: FileList | File[]) => {

@@ -1,14 +1,18 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { UserRoundSearch, Camera, AlertCircle, FileText, Heart, MapPin, Phone, ArrowRight, HelpCircle, X, Flag } from 'lucide-react';
-import { FoundPerson, MatchResult } from '../types';
-import { buscarPersona, reportarPublicacion } from '../api';
-import { useForm, useStore } from '@tanstack/react-form';
-import PhotoUploader, { Photo } from './form/PhotoUploader';
-import HelpModal, { HelpStep } from './form/HelpModal';
-import DocumentInput from './form/DocumentInput';
-import { inputClasses } from './form/Field';
-import { fieldError } from './form/fieldError';
-import { searchByImageSchema, searchByImageDefaults, type SearchDocTipo } from './SearchMissingForm.schema';
+import { useForm,  } from '@tanstack/react-form';
+import { useSelector } from '@tanstack/react-store';
+
+import { buscarPersona, reportarPublicacion } from '@/api';
+
+import PhotoUploader, {type Photo } from '../form/PhotoUploader';
+import HelpModal, { HelpStep } from '../form/HelpModal';
+import DocumentInput from '../form/DocumentInput';
+import { inputClasses } from '../form/Field';
+import { fieldError } from '../form/fieldError';
+import { searchByImageSchema, searchByImageDefaults,  } from './missing.schema';
+
+import type{ FoundPerson, MatchResult } from '@/types';
 
 const MAX_IMAGES = 1;
 const PAGE_SIZE = 6;
@@ -98,8 +102,8 @@ export default function SearchMissingForm() {
     },
   });
 
-  const qDocTipo = useStore(form.store, (state) => state.values.qDocTipo);
-  const isSubmitting = useStore(form.store, (state) => state.isSubmitting);
+  const qDocTipo = useSelector(form.store, (state) => state.values.qDocTipo);
+  const isSubmitting = useSelector(form.store, (state) => state.isSubmitting);
 
   const addFiles = (files: FileList | File[]) => {
     const imgs = Array.from(files).filter((f) => f.type.startsWith('image/'));
@@ -122,7 +126,7 @@ export default function SearchMissingForm() {
   const totalPages = searchResults ? Math.ceil(searchResults.length / PAGE_SIZE) : 0;
   const pageItems = searchResults ? searchResults.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE) : [];
 
-  const photos = useStore(form.store, (state) => state.values.photos);
+  const photos = useSelector(form.store, (state) => state.values.photos);
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-6" id="search-missing-view">
