@@ -6,7 +6,8 @@
  * Compartido por buscar/reportar.
  */
 import { inputClasses } from './Field';
-import type { SearchDocTipo } from '../SearchMissingForm.schema';
+
+import type { SearchDocTipo } from '@/components/SearchMissingForm/missing.schema';
 
 export const DOC_TYPES = ['V', 'E', 'J', 'P', 'G', 'C', 'R'];
 
