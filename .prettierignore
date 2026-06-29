@@ -1,0 +1,9 @@
+dist/
+node_modules/
+public/mockServiceWorker.js
+*.svg
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp

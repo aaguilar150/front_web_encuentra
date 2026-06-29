@@ -25,14 +25,18 @@ export default function ReportSuccess({ result, onReset }: ReportSuccessProps) {
             <Heart size={15} className="fill-emerald-500 text-emerald-500" /> ¡Un familiar ya la buscaba!
           </p>
           {result.alerta.familiar_nombre && (
-            <p className="text-slate-600"><strong>Familiar:</strong> {result.alerta.familiar_nombre}</p>
+            <p className="text-slate-600">
+              <strong>Familiar:</strong> {result.alerta.familiar_nombre}
+            </p>
           )}
           {result.alerta.familiar_telefono && (
             <p className="text-slate-600 flex items-center gap-1.5">
               <Phone size={14} className="text-emerald-600" /> {result.alerta.familiar_telefono}
             </p>
           )}
-          <p className="text-[11px] text-emerald-700">Coincidencia {result.alerta.coincidencia}% · confianza {result.alerta.confianza}.</p>
+          <p className="text-[11px] text-emerald-700">
+            Coincidencia {result.alerta.coincidencia}% · confianza {result.alerta.confianza}.
+          </p>
         </div>
       )}
 

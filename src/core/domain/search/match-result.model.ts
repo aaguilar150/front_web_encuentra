@@ -6,7 +6,7 @@ import { FoundPerson } from '../found-person/found-person.model';
 export interface MatchResult {
   foundPerson: FoundPerson;
   similarity: number; // 0..100
-  distance: number;   // distancia coseno de ChromaDB (< 1 = certeza)
+  distance: number; // distancia coseno de ChromaDB (< 1 = certeza)
   isCertain: boolean; // distance < 1
 }
 

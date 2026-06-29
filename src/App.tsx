@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { Activity, useEffect, useState } from 'react';
 
 import { reportarFalla } from './api';
 import ApiIntegrationGuide from './components/ApiIntegrationGuide';
@@ -24,7 +24,9 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'buscar' | 'reportar' | 'api'>('reportar');
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('ven_onboarded'));
   const [foundPersons, setFoundPersons] = useState<FoundPerson[]>([]);
-  const [lastUpdated, setLastUpdated] = useState<string>(() => localStorage.getItem('ven_disaster_last_updated') || new Date().toISOString());
+  const [lastUpdated, setLastUpdated] = useState<string>(
+    () => localStorage.getItem('ven_disaster_last_updated') || new Date().toISOString(),
+  );
   const [now, setNow] = useState(() => Date.now());
   const [stats, setStats] = useState({
     totalFound: 142,
@@ -112,12 +114,23 @@ export default function App() {
       <FlagBar />
       <Header onOpenErrorReport={errorReport.openModal} />
 
-      <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5">
+      <main className="grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5">
         <TabSwitcher activeTab={activeTab === 'buscar' ? 'buscar' : 'reportar'} onChange={setActiveTab} />
 
-        {activeTab === 'buscar' && <SearchMissingForm />}
-        {activeTab === 'reportar' && <ReportFoundForm onAddPerson={handleAddPerson} />}
-        {activeTab === 'api' && <ApiIntegrationGuide />}
+        {/* {activeTab === 'buscar' && <SearchMissingForm />} */}
+        <div className={activeTab === 'buscar' ? 'block' : 'hidden'}>
+          <SearchMissingForm />
+        </div>
+        <div className={activeTab === 'reportar' ? 'visible' : 'hidden'}>
+          <ReportFoundForm onAddPerson={handleAddPerson} />
+        </div>
+
+        <Activity mode={activeTab === 'api' ? 'visible' : 'hidden'}>
+          <ApiIntegrationGuide />
+        </Activity>
+
+        {/* {activeTab === 'reportar' && <ReportFoundForm onAddPerson={handleAddPerson} />} */}
+        {/* {activeTab === 'api' && <ApiIntegrationGuide />} */}
 
         <StatsBar items={statItems} />
       </main>

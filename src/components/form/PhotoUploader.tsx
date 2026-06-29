@@ -6,6 +6,7 @@
  */
 import React, { useRef } from 'react';
 import { Upload, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export type Photo = { file: File; url: string };
 
@@ -44,38 +45,59 @@ export default function PhotoUploader({ photos, max, accent, error, disabled, on
       <input
         type="file"
         ref={inputRef}
-        onChange={(e) => { if (e.target.files) onAdd(e.target.files); e.target.value = ''; }}
+        onChange={(e) => {
+          if (e.target.files) onAdd(e.target.files);
+          e.target.value = '';
+        }}
         accept="image/*,.heic,.heif"
         multiple={max > 1}
         className="hidden"
       />
       <div
-        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-        onDrop={(e) => { e.preventDefault(); e.stopPropagation(); if (e.dataTransfer.files) onAdd(e.dataTransfer.files); }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (e.dataTransfer.files) onAdd(e.dataTransfer.files);
+        }}
         className={`border-2 border-dashed rounded-xl p-4 transition-all ${zone} ${disabled ? 'opacity-60 pointer-events-none' : ''}`}
         id="image-dropzone"
       >
         {photos.length === 0 ? (
-          <button type="button" onClick={() => inputRef.current?.click()} className="w-full text-center py-5 cursor-pointer">
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="w-full text-center py-5 cursor-pointer"
+          >
             <div className={`w-11 h-11 rounded-full ${a.iconWrap} flex items-center justify-center mx-auto mb-2`}>
               <Upload size={20} />
             </div>
             <p className="text-sm font-semibold text-slate-700">Haz clic o arrastra las fotos aquí</p>
-            <p className="text-xs text-slate-400 mt-0.5">JPG, PNG, WebP, HEIC y más — rostro frontal claro{max > 1 ? ` (hasta ${max})` : ''}</p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              JPG, PNG, WebP, HEIC y más — rostro frontal claro{max > 1 ? ` (hasta ${max})` : ''}
+            </p>
           </button>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
             {photos.map((p, idx) => (
               <div key={idx} className="relative aspect-square">
-                <img src={p.url} alt={`Foto ${idx + 1}`} className="w-full h-full object-contain bg-slate-100 rounded-lg border border-slate-200 shadow-sm" />
-                <button
-                  type="button"
+                <img
+                  src={p.url}
+                  alt={`Foto ${idx + 1}`}
+                  className="w-full h-full object-contain bg-slate-100 rounded-lg border border-slate-200 shadow-sm"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="absolute -top-1.5 -right-1.5 bg-white text-slate-500 shadow-md border border-slate-200 hover:text-rose-600 hover:border-rose-200"
                   onClick={() => onRemove(idx)}
-                  className="absolute -top-1.5 -right-1.5 bg-white text-slate-500 p-1 rounded-full shadow-md border border-slate-200 hover:text-rose-600 hover:border-rose-200 transition-all z-10"
                   aria-label="Quitar foto"
                 >
                   <X size={13} strokeWidth={3} />
-                </button>
+                </Button>
               </div>
             ))}
             {photos.length < max && (

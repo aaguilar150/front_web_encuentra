@@ -18,7 +18,9 @@ export default function StatsBar({ items }: StatsBarProps) {
         >
           <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${item.color} animate-pulse`}></span>
           <div className="min-w-0">
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide leading-tight truncate">{item.label}</p>
+            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide leading-tight truncate">
+              {item.label}
+            </p>
             <p className="text-sm font-bold text-slate-800 font-mono leading-tight truncate">{item.value}</p>
           </div>
         </div>

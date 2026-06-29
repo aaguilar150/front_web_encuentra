@@ -17,7 +17,9 @@ const RING: Record<Accent, string> = {
 
 /** className compartido por todos los inputs/selects/textarea. */
 export function inputClasses(accent: Accent = 'blue', error?: boolean, hasIcon?: boolean): string {
-  const border = error ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' : `border-slate-200 ${RING[accent]}`;
+  const border = error
+    ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20'
+    : `border-slate-200 ${RING[accent]}`;
   const padLeft = hasIcon ? 'pl-10' : 'pl-3.5';
   return `w-full ${padLeft} pr-3.5 py-2.5 bg-white border focus:ring-2 rounded-xl text-slate-800 text-sm placeholder-slate-400 outline-none transition-all font-medium shadow-sm ${border}`;
 }
@@ -73,25 +75,51 @@ export default function Field({
   return (
     <div className="space-y-1.5">
       {label && (
-        <label htmlFor={fieldId} className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between gap-2">
+        <label
+          htmlFor={fieldId}
+          className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between gap-2"
+        >
           <span>
             {label}
             {required && <span className="text-rose-500"> *</span>}
             {optional && <span className="text-slate-400 font-medium normal-case"> (opcional)</span>}
           </span>
-          {counter && maxLength && <span className="text-[10px] font-semibold text-slate-400 normal-case tabular-nums">{value.length}/{maxLength}</span>}
+          {counter && maxLength && (
+            <span className="text-[10px] font-semibold text-slate-400 normal-case tabular-nums">
+              {value.length}/{maxLength}
+            </span>
+          )}
         </label>
       )}
       <div className="relative">
         {Icon && (
-          <div className={`absolute left-0 pl-3.5 flex pointer-events-none text-slate-400 ${multiline ? 'top-3 items-start' : 'inset-y-0 items-center'}`}>
+          <div
+            className={`absolute left-0 pl-3.5 flex pointer-events-none text-slate-400 ${multiline ? 'top-3 items-start' : 'inset-y-0 items-center'}`}
+          >
             <Icon size={16} />
           </div>
         )}
         {multiline ? (
-          <textarea id={fieldId} placeholder={placeholder} rows={rows} maxLength={maxLength} value={value} onChange={(e) => handle(e.target.value)} className={cls} />
+          <textarea
+            id={fieldId}
+            placeholder={placeholder}
+            rows={rows}
+            maxLength={maxLength}
+            value={value}
+            onChange={(e) => handle(e.target.value)}
+            className={cls}
+          />
         ) : (
-          <input id={fieldId} type={type} inputMode={inputMode} placeholder={placeholder} maxLength={maxLength} value={value} onChange={(e) => handle(e.target.value)} className={cls} />
+          <input
+            id={fieldId}
+            type={type}
+            inputMode={inputMode}
+            placeholder={placeholder}
+            maxLength={maxLength}
+            value={value}
+            onChange={(e) => handle(e.target.value)}
+            className={cls}
+          />
         )}
       </div>
       {error ? (

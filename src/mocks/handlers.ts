@@ -5,10 +5,7 @@ import { createMockApi } from './mockApi';
 const mockApi = createMockApi();
 
 function validationError(message: string) {
-  return HttpResponse.json(
-    { detail: [{ msg: message }] },
-    { status: 422 },
-  );
+  return HttpResponse.json({ detail: [{ msg: message }] }, { status: 422 });
 }
 
 export const handlers = [

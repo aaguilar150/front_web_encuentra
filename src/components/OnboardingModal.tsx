@@ -5,7 +5,8 @@
  * Modal de bienvenida que aparece solo la primera vez que se abre la app.
  */
 import React from 'react';
-import { Search, PlusCircle, Heart, X } from 'lucide-react';
+import { UserRoundSearch, UserRoundPlus, Heart, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface Props {
   onClose: () => void;
@@ -13,19 +14,23 @@ interface Props {
 
 export default function OnboardingModal({ onClose }: Props) {
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-80 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
       <div
         className="bg-white rounded-2xl shadow-2xl w-full max-w-lg relative p-6 sm:p-7 max-h-[90vh] overflow-y-auto animate-[fadeIn_0.2s_ease-out]"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-4 right-4 bg-slate-100 hover:bg-slate-200"
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 p-1.5 rounded-full transition-all"
           aria-label="Cerrar"
         >
           <X size={18} />
-        </button>
+        </Button>
 
         <div className="text-center mb-5">
           <div className="relative w-12 h-12 rounded-xl shadow-sm overflow-hidden flex items-center justify-center mx-auto mb-3">
@@ -43,7 +48,7 @@ export default function OnboardingModal({ onClose }: Props) {
         <div className="grid grid-cols-1 gap-3">
           <div className="bg-rose-50/60 border border-rose-100 rounded-xl p-4 flex gap-3">
             <div className="w-10 h-10 rounded-lg bg-rose-600 text-white flex items-center justify-center shrink-0">
-              <Search size={20} />
+              <UserRoundSearch size={20} />
             </div>
             <div>
               <h3 className="text-sm font-bold text-rose-900">Buscar familiar</h3>
@@ -55,24 +60,21 @@ export default function OnboardingModal({ onClose }: Props) {
 
           <div className="bg-blue-50/60 border border-blue-100 rounded-xl p-4 flex gap-3">
             <div className="w-10 h-10 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0">
-              <PlusCircle size={20} />
+              <UserRoundPlus size={20} />
             </div>
             <div>
               <h3 className="text-sm font-bold text-blue-900">Reportar persona encontrada</h3>
               <p className="text-xs text-slate-600 leading-snug mt-0.5">
-                ¿Ayudaste a alguien? Registra su foto y sus datos para que su familia pueda dar con ella. Reporta solo casos reales.
+                ¿Ayudaste a alguien? Registra su foto y sus datos para que su familia pueda dar con ella. Reporta solo
+                casos reales.
               </p>
             </div>
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={onClose}
-          className="w-full mt-5 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl transition-all shadow-md"
-        >
+        <Button variant="dark" className="w-full mt-5" onClick={onClose}>
           Entendido, empezar
-        </button>
+        </Button>
       </div>
     </div>
   );

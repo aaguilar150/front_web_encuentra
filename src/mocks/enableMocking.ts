@@ -4,10 +4,7 @@ interface EnableMockingOptions {
   hasWindow?: boolean;
   loadWorker?: () => Promise<{
     worker: {
-      start: (options: {
-        onUnhandledRequest: 'bypass';
-        serviceWorker: { url: string };
-      }) => Promise<unknown>;
+      start: (options: { onUnhandledRequest: 'bypass'; serviceWorker: { url: string } }) => Promise<unknown>;
     };
   }>;
 }
