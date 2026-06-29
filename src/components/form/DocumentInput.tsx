@@ -5,16 +5,17 @@
  * Documento de identidad: selector de tipo + número (solo dígitos).
  * Compartido por buscar/reportar.
  */
-import React from 'react';
 import { inputClasses } from './Field';
 import { RING } from '../ui/accents';
+
+import type { SearchDocTipo } from '@/components/SearchMissingForm/missing.schema';
 
 export const DOC_TYPES = ['V', 'E', 'J', 'P', 'G', 'C', 'R'];
 
 interface Props {
-  tipo: string;
+  tipo: SearchDocTipo;
   numero: string;
-  onTipo: (v: string) => void;
+  onTipo: (v: SearchDocTipo) => void;
   onNumero: (v: string) => void;
   accent: 'blue' | 'rose';
   error?: boolean;
@@ -26,9 +27,16 @@ export default function DocumentInput({ tipo, numero, onTipo, onNumero, accent, 
 
   return (
     <div className="flex gap-2">
-      <select value={tipo} onChange={(e) => onTipo(e.target.value)} className={selectCls} aria-label="Tipo de documento">
+      <select
+        value={tipo}
+        onChange={(e) => onTipo(e.target.value as SearchDocTipo)}
+        className={selectCls}
+        aria-label="Tipo de documento"
+      >
         {DOC_TYPES.map((t) => (
-          <option key={t} value={t}>{t}</option>
+          <option key={t} value={t}>
+            {t}
+          </option>
         ))}
       </select>
       <input
