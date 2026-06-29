@@ -10,6 +10,7 @@ import ApiIntegrationGuide from './components/ApiIntegrationGuide';
 import OnboardingModal from './components/OnboardingModal';
 import ReportFoundForm from './components/ReportFoundForm';
 import SearchMissingForm from './components/SearchMissingForm';
+import { TestimonialsSection } from './components/TestimmonialSection'; // <-- 1. IMPORTADO AQUÍ
 import ErrorReportModal from './components/layout/ErrorReportModal';
 import FlagBar from './components/layout/FlagBar';
 import Footer from './components/layout/Footer';
@@ -118,6 +119,9 @@ export default function App() {
         {activeTab === 'buscar' && <SearchMissingForm />}
         {activeTab === 'reportar' && <ReportFoundForm onAddPerson={handleAddPerson} />}
         {activeTab === 'api' && <ApiIntegrationGuide />}
+
+        {/* 🚀 2. SECCIÓN DE TESTIMONIOS AGREGADA AQUÍ */}
+        <TestimonialsSection />
 
         <StatsBar items={statItems} />
       </main>

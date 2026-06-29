@@ -7,7 +7,7 @@ export const TestimonialsSection = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('https://symtechven.com/api/v1/testimonials') 
+    fetch('https://symtechven.com/api/docs#/rescatista') 
       .then((res) => {
         if (!res.ok) throw new Error('Error al conectar con el servidor de históricos');
         return res.json();
