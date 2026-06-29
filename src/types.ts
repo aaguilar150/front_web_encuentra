@@ -28,3 +28,12 @@ export interface SearchRequest {
   missingPersonImage: string; // Data URL or file name
   dateRequested: string;
 }
+
+export interface Testimonial {
+  id: string | number;
+  name: string;
+  role?: string;         // Ej: "Familiar", "Rescatista", "Voluntario"
+  content: string;       // El texto del testimonio o descripción del histórico
+  dateReported?: string; // Fecha en que se registró
+  imageUrl?: string;     // Por si el histórico incluye foto del reencuentro
+}
