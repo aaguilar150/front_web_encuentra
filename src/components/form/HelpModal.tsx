@@ -16,6 +16,7 @@ export interface HelpStep {
 const ACCENTS = {
   rose: { title: 'text-rose-900', icon: 'text-rose-500', card: 'bg-rose-50/50 border-rose-100', num: 'bg-rose-500' },
   emerald: { title: 'text-emerald-950', icon: 'text-emerald-600', card: 'bg-emerald-50/50 border-emerald-100', num: 'bg-emerald-600' },
+  blue: { title: 'text-blue-900', icon: 'text-blue-600', card: 'bg-blue-50/50 border-blue-100', num: 'bg-blue-600' },
 };
 
 interface Props {

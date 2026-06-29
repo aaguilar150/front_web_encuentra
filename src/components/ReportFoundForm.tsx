@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef } from 'react';
-import { PlusCircle, Camera, AlertCircle, MapPin, Phone, Building, User, HelpCircle } from 'lucide-react';
+import { UserCheck, Megaphone, Camera, AlertCircle, MapPin, Phone, Building, User, HelpCircle, PlusCircle } from 'lucide-react';
 import { FoundPerson } from '../types';
 import { reportarEncontrado, ResultadoRegistro } from '../api';
 import PhotoUploader, { Photo } from './form/PhotoUploader';
@@ -35,6 +35,7 @@ const HELP_STEPS: HelpStep[] = [
 
 export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
   const [showHelp, setShowHelp] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [photos, setPhotos] = useFormDraft<Photo[]>('report.photos', []);
   const [isChild, setIsChild] = useFormDraft('report.isChild', false);
   const [nombre, setNombre] = useFormDraft('report.nombre', '');
@@ -79,10 +80,17 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
       return;
     }
 
+    setErrors({});
+    setShowConfirmModal(true);
+  };
+
+  const confirmSubmit = async () => {
+    setShowConfirmModal(false);
+    if (inFlight.current) return;
+
     const telefonoResponsable = `${telPrefijo}${telNumero}`;
     const docResponsableFull = docResponsable.trim() ? `${docRespTipo}-${docResponsable.trim()}` : '';
 
-    setErrors({});
     inFlight.current = true;
     setIsSubmitting(true);
     try {
@@ -144,26 +152,29 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
     errors[field] ? <p className="text-xs text-red-600 mt-1 flex items-center gap-1"><AlertCircle size={13} className="shrink-0" />{errors[field]}</p> : null;
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-6" id="report-found-view">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 mb-4 border-b border-slate-100">
+    <div className="bg-white rounded-2xl shadow-sm border border-blue-500 p-4 sm:p-6" id="report-found-view">
+      <div className="flex flex-col gap-4 pb-4 mb-4 border-b border-blue-100">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl shrink-0">
-            <PlusCircle size={22} />
+          <div className="p-2.5 bg-blue-600 text-white rounded-xl shrink-0 shadow-sm">
+            <Megaphone size={22} />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-slate-800 leading-tight">Reportar Persona Encontrada</h2>
+            <h2 className="text-lg font-bold text-slate-800 leading-tight">Encontré a alguien</h2>
             <p className="text-sm text-slate-500 leading-snug">Agrega a una persona encontrada a la base de datos.</p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowHelp(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 transition-all"
-          id="btn-toggle-report-help"
-        >
-          <HelpCircle size={15} />
-          ¿CÓMO FUNCIONA?
-        </button>
+        
+        <div className="flex justify-center w-full mt-1">
+          <button
+            type="button"
+            onClick={() => setShowHelp(true)}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black border-2 border-amber-500 bg-amber-500/15 text-amber-800 hover:bg-amber-500/25 hover:border-amber-600 transition-all active:scale-[0.98]"
+            id="btn-toggle-report-help"
+          >
+            <HelpCircle size={16} className="shrink-0" />
+            ¿CÓMO FUNCIONA?
+          </button>
+        </div>
       </div>
 
       <HelpModal
@@ -171,7 +182,7 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
         onClose={() => setShowHelp(false)}
         title="Cómo reportar una persona encontrada"
         steps={HELP_STEPS}
-        accent="emerald"
+        accent="blue"
         id="report-help-modal"
       />
 
@@ -308,10 +319,40 @@ export default function ReportFoundForm({ onAddPerson }: ReportFoundFormProps) {
             className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-base rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
             id="btn-submit-report"
           >
-            <PlusCircle size={20} />
-            {isSubmitting ? 'Registrando…' : 'Reportar Persona Encontrada'}
+            <Megaphone size={20} />
+            {isSubmitting ? 'Registrando…' : 'Registrar que lo encontré'}
           </button>
         </form>
+      )}
+
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" onClick={() => setShowConfirmModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center animate-[fadeIn_0.2s_ease-out]" onClick={(e) => e.stopPropagation()}>
+            <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Megaphone size={32} />
+            </div>
+            <h3 className="text-lg font-bold text-slate-800 mb-2">Confirmar reporte</h3>
+            <p className="text-sm text-slate-600 mb-6">
+              ¿Confirmas que encontraste a esta persona y deseas reportarla oficialmente como encontrada? Esta información es vital para sus familiares.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={confirmSubmit}
+                className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-md"
+              >
+                Sí, reportar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

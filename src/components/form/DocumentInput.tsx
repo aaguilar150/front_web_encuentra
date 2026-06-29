@@ -21,8 +21,8 @@ interface Props {
 }
 
 export default function DocumentInput({ tipo, numero, onTipo, onNumero, accent, error, numeroId }: Props) {
-  const selectCls = `px-3 py-2.5 font-bold shrink-0 bg-white border border-slate-200 rounded-xl text-slate-800 text-sm outline-none transition-all shadow-sm focus:ring-2 ${
-    accent === 'rose' ? 'focus:border-rose-500 focus:ring-rose-500/20' : 'focus:border-blue-500 focus:ring-blue-500/20'
+  const selectCls = `px-3 py-2.5 font-bold shrink-0 bg-white border rounded-xl text-slate-800 text-sm outline-none transition-all shadow-sm ${
+    accent === 'rose' ? 'border-rose-500 focus:border-rose-500' : 'border-blue-500 focus:border-blue-500'
   }`;
 
   return (

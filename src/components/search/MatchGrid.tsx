@@ -1,4 +1,4 @@
-import { AlertCircle, ArrowRight, FileText, Flag, MapPin } from 'lucide-react';
+import { AlertCircle, ArrowRight, ArrowDown, FileText, Flag, MapPin, RefreshCw } from 'lucide-react';
 
 import { MatchResult } from '../../types';
 
@@ -44,6 +44,7 @@ export default function MatchGrid({
           className="w-full sm:w-auto py-2.5 px-5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2 shrink-0"
           id="btn-re-search"
         >
+          <RefreshCw size={16} />
           Buscar de nuevo
         </button>
       </div>
@@ -56,7 +57,17 @@ export default function MatchGrid({
       )}
 
       <div className="space-y-3">
-        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Posibles coincidencias — toca una para ver sus datos:</p>
+        <div className="flex flex-col items-center justify-center text-center gap-1.5 my-6">
+          <p className="text-sm font-black text-rose-600 uppercase tracking-wider">
+            Posibles coincidencias ({results.length})
+          </p>
+          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+            Toca una para ver sus datos
+          </p>
+          <div className="mt-1 text-rose-500">
+            <ArrowDown size={22} strokeWidth={3} className="animate-bounce" />
+          </div>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {pageItems.map((result, index) => {
             const person = result.foundPerson;

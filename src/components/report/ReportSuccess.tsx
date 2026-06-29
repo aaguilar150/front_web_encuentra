@@ -1,4 +1,4 @@
-import { Check, Heart, Phone, PlusCircle } from 'lucide-react';
+import { Check, Heart, Phone, RefreshCw } from 'lucide-react';
 
 import { ResultadoRegistro } from '../../api';
 
@@ -39,10 +39,10 @@ export default function ReportSuccess({ result, onReset }: ReportSuccessProps) {
       <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
         <button
           onClick={onReset}
-          className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg transition-all flex items-center justify-center gap-2"
+          className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
           id="btn-add-more"
         >
-          <PlusCircle size={14} />
+          <RefreshCw size={16} />
           Reportar Otra Persona
         </button>
       </div>

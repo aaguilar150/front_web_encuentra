@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef } from 'react';
-import { Search, Camera, AlertCircle, HelpCircle } from 'lucide-react';
+import { Search, Camera, AlertCircle, HelpCircle, User } from 'lucide-react';
 import { FoundPerson, MatchResult } from '../types';
 import { buscarPersona, reportarPublicacion } from '../api';
 import PhotoUploader, { Photo } from './form/PhotoUploader';
@@ -35,10 +35,10 @@ const waLink = (phone: string) => {
 };
 
 const HELP_STEPS: HelpStep[] = [
-  { n: 1, t: 'Subir Fotografía', d: 'Sube una foto del rostro de la persona que buscas. Se requiere visibilidad frontal clara.' },
-  { n: 2, t: 'Cotejo Facial AI', d: 'El sistema extrae un vector facial (embedding) y lo compara por distancia coseno en ChromaDB.' },
-  { n: 3, t: 'Ver Coincidencias', d: 'Los resultados se ordenan por semejanza. Verás la descripción física y el centro de refugio.' },
-  { n: 4, t: 'Contacto Seguro', d: 'Ante una coincidencia cierta, solicita el reencuentro y preséntate con tu identificación oficial.' },
+  { n: 1, t: 'Subir Fotografía', d: 'Sube una foto del rostro de la persona que buscas. Asegúrate de que no salga con otra persona y no sea un flyer (cartel de búsqueda).' },
+  { n: 2, t: 'Datos de la Persona', d: 'Llena el nombre y la cédula. Puede ser solo uno de los dos si no te sabes ambos (o el nombre o la cédula).' },
+  { n: 3, t: 'Ver Coincidencias', d: 'El sistema buscará coincidencias con las personas reportadas. Verás su foto, descripción y ubicación.' },
+  { n: 4, t: 'Contacto Seguro', d: 'Ante una coincidencia cierta, solicita el reencuentro y preséntate en el lugar con tu identificación oficial.' },
 ];
 
 export default function SearchMissingForm() {
@@ -160,26 +160,29 @@ export default function SearchMissingForm() {
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-6" id="search-missing-view">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 mb-4 border-b border-slate-100">
+    <div className="bg-white rounded-2xl shadow-sm border border-rose-500 p-4 sm:p-6" id="search-missing-view">
+      <div className="flex flex-col gap-4 pb-4 mb-4 border-b border-rose-100">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-rose-50 text-rose-600 rounded-xl shrink-0">
+          <div className="p-2.5 bg-rose-600 text-white rounded-xl shrink-0 shadow-sm">
             <Search size={22} />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-slate-800 leading-tight">Buscar Familiar</h2>
+            <h2 className="text-lg font-bold text-slate-800 leading-tight">Quiero buscar a alguien</h2>
             <p className="text-sm text-slate-500 leading-snug">Sube una foto y busca coincidencias por reconocimiento facial.</p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowHelp(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 transition-all"
-          id="btn-toggle-help"
-        >
-          <HelpCircle size={15} />
-          ¿CÓMO FUNCIONA?
-        </button>
+        
+        <div className="flex justify-center w-full mt-1">
+          <button
+            type="button"
+            onClick={() => setShowHelp(true)}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black border-2 border-amber-500 bg-amber-500/15 text-amber-800 hover:bg-amber-500/25 hover:border-amber-600 transition-all active:scale-[0.98]"
+            id="btn-toggle-help"
+          >
+            <HelpCircle size={16} className="shrink-0" />
+            ¿CÓMO FUNCIONA?
+          </button>
+        </div>
       </div>
 
       <HelpModal
@@ -197,13 +200,13 @@ export default function SearchMissingForm() {
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-2">
               <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                <Camera size={14} className="text-blue-600" />
+                <Camera size={14} className="text-rose-600" />
                 Fotos de la persona
               </label>
               {photos.length > 0 && <span className="text-[11px] font-semibold text-slate-400">{photos.length}/{MAX_IMAGES}</span>}
             </div>
 
-            <PhotoUploader photos={photos} max={MAX_IMAGES} accent="blue" error={!!error} disabled={isAnalyzing} onAdd={addFiles} onRemove={removePhoto} />
+            <PhotoUploader photos={photos} max={MAX_IMAGES} accent="rose" error={!!error} disabled={isAnalyzing} onAdd={addFiles} onRemove={removePhoto} />
             {error && (
               <p className="text-xs text-red-600 mt-1 flex items-center gap-1" id="search-error">
                 <AlertCircle size={13} className="shrink-0" />{error}
@@ -213,10 +216,11 @@ export default function SearchMissingForm() {
             {/* Identidad de la persona buscada: basta UNO de los dos */}
             <div className="space-y-2 pt-1">
               <div>
-                <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                <p className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <User size={14} className="text-rose-600" />
                   Datos de la persona que buscas <span className="text-rose-500">*</span>
                 </p>
-                <p className="text-[11px] text-slate-400 mt-0.5">Completa su nombre o su cedula
+                <p className="text-[11px] text-slate-400 mt-0.5 ml-5">Completa su nombre o su cedula
                   <strong> (no hacen falta ambos).</strong></p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

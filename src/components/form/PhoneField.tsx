@@ -23,8 +23,8 @@ export default function PhoneField({
   error,
   id = 'contact-phone-input',
 }: PhoneFieldProps) {
-  const selectClass = `px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-800 text-sm outline-none transition-all font-bold shadow-sm shrink-0 focus:ring-2 ${
-    accent === 'rose' ? 'focus:border-rose-500 focus:ring-rose-500/20' : 'focus:border-blue-500 focus:ring-blue-500/20'
+  const selectClass = `px-3 py-2.5 bg-white border rounded-xl text-slate-800 text-sm outline-none transition-all font-bold shadow-sm shrink-0 ${
+    accent === 'rose' ? 'border-rose-500 focus:border-rose-500' : 'border-blue-500 focus:border-blue-500'
   }`;
 
   return (

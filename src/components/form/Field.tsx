@@ -10,16 +10,16 @@ import type { LucideIcon } from 'lucide-react';
 
 type Accent = 'blue' | 'rose';
 
-const RING: Record<Accent, string> = {
-  blue: 'focus:border-blue-500 focus:ring-blue-500/20',
-  rose: 'focus:border-rose-500 focus:ring-rose-500/20',
+const FOCUS: Record<Accent, string> = {
+  blue: 'focus:border-blue-500',
+  rose: 'focus:border-rose-500',
 };
 
-/** className compartido por todos los inputs/selects/textarea. */
 export function inputClasses(accent: Accent = 'blue', error?: boolean, hasIcon?: boolean): string {
-  const border = error ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20' : `border-slate-200 ${RING[accent]}`;
+  const baseBorder = accent === 'rose' ? 'border-rose-500' : 'border-blue-500';
+  const border = error ? 'border-red-400 focus:border-red-500' : `${baseBorder} ${FOCUS[accent]}`;
   const padLeft = hasIcon ? 'pl-10' : 'pl-3.5';
-  return `w-full ${padLeft} pr-3.5 py-2.5 bg-white border focus:ring-2 rounded-xl text-slate-800 text-sm placeholder-slate-400 outline-none transition-all font-medium shadow-sm ${border}`;
+  return `w-full ${padLeft} pr-3.5 py-2.5 bg-white border rounded-xl text-slate-800 text-sm placeholder-slate-400 outline-none transition-all font-medium shadow-sm ${border}`;
 }
 
 interface FieldProps {
