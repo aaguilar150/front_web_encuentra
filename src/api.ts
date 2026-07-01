@@ -9,6 +9,7 @@
 import { FoundPerson, MatchResult } from './types';
 
 const API_BASE = (import.meta.env.VITE_API_URL ?? '/api').replace(/\/$/, '');
+const API_KEY = import.meta.env.VITE_API_KEY || '';
 
 /**
  * Origen para las fotos. El back puede enviar URLs completas o rutas relativas
@@ -99,7 +100,9 @@ const candidatoToMatch = (c: Candidato): MatchResult => ({
 
 // ---- Helper POST multipart con manejo de errores 422 de FastAPI ----
 async function postForm<T>(path: string, form: FormData): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, { method: 'POST', body: form });
+  const headers: HeadersInit = {};
+  if (API_KEY) headers['X-API-Key'] = API_KEY;
+  const res = await fetch(`${API_BASE}${path}`, { method: 'POST', headers, body: form });
   if (!res.ok) {
     let msg = `Error ${res.status}`;
     try {
@@ -120,9 +123,11 @@ const appendIf = (fd: FormData, key: string, val?: string) => {
 };
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (API_KEY) headers['X-API-Key'] = API_KEY;
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(body),
   });
   if (!res.ok) {

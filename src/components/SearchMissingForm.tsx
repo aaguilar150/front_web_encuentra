@@ -167,22 +167,25 @@ export default function SearchMissingForm({ onBack }: SearchMissingFormProps) {
 
   if (searchResults) {
     return (
-      <SearchResultsList
-        results={searchResults}
-        page={page}
-        pageSize={PAGE_SIZE}
-        reportedIds={reportedIds}
-        confirmingId={confirmingId}
-        resultsError={resultsError}
-        onResetSearch={handleResetSearch}
-        onOpenCandidate={handleOpenCandidate}
-        onConfirmReport={setConfirmingId}
-        onReportPublication={(personId) => {
-          void handleReportPublication(personId);
-        }}
-        onPageChange={setPage}
-        onBack={onBack}
-      />
+      <>
+        <SearchResultsList
+          results={searchResults}
+          page={page}
+          pageSize={PAGE_SIZE}
+          reportedIds={reportedIds}
+          confirmingId={confirmingId}
+          resultsError={resultsError}
+          onResetSearch={handleResetSearch}
+          onOpenCandidate={handleOpenCandidate}
+          onConfirmReport={setConfirmingId}
+          onReportPublication={(personId) => {
+            void handleReportPublication(personId);
+          }}
+          onPageChange={setPage}
+          onBack={onBack}
+        />
+        <CandidateModal candidate={selectedCandidate} onClose={() => setSelectedCandidate(null)} waLink={waLink} />
+      </>
     );
   }
 
