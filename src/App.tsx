@@ -1,77 +1,77 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * Shell de la aplicación: layout (header/footer), navegación entre las dos
+ * vistas (Buscar / Reportar), onboarding y modal de reporte de error.
+ * La lógica de cada flujo vive en su vista (`views/`); aquí solo se rutea.
  */
+import React, { useState } from 'react';
+import { Search, PlusCircle, Info } from 'lucide-react';
 
-import React, { useEffect, useState } from 'react';
+import Header from './components/layout/Header';
+import Footer from './components/layout/Footer';
+import FlagBar from './components/layout/FlagBar';
+import OnboardingModal from './components/modals/OnboardingModal';
+import ErrorReportModal from './components/modals/ErrorReportModal';
+import SearchView from './views/search/SearchView';
+import ReportView from './views/report/ReportView';
 
-import { reportarFalla } from './api';
+// Elementos de luisdev
+import MenuView from './components/MenuView';
 import ApiIntegrationGuide from './components/ApiIntegrationGuide';
 import OnboardingView from './components/OnboardingView';
-import ReportFoundForm from './components/ReportFoundForm';
-import SearchMissingForm from './components/SearchMissingForm';
-import MenuView from './components/MenuView';
-import ErrorReportModal from './components/layout/ErrorReportModal';
-import FlagBar from './components/layout/FlagBar';
-import Footer from './components/layout/Footer';
-import Header from './components/layout/Header';
-import TabSwitcher from './components/layout/TabSwitcher';
-import { INITIAL_FOUND_PERSONS } from './data';
-import { useErrorReport } from './hooks/useErrorReport';
-import { FoundPerson } from './types';
+
+type Tab = 'inicio' | 'buscar' | 'reportar' | 'api' | 'testimonios';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'inicio' | 'buscar' | 'reportar' | 'api' | 'testimonios'>('inicio');
+  const [activeTab, setActiveTab] = useState<Tab>('inicio');
+  const [infoTip, setInfoTip] = useState<Tab | null>(null);
+  const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
+  
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [foundPersons, setFoundPersons] = useState<FoundPerson[]>([]);
 
-  const errorReport = useErrorReport(reportarFalla);
+  // El onboarding se muestra solo la primera visita (marca en localStorage).
+  const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('ven_onboarded'));
 
-  useEffect(() => {
-    const stored = localStorage.getItem('ven_disaster_found_persons');
-    if (stored) {
-      try {
-        setFoundPersons(JSON.parse(stored));
-      } catch {
-        setFoundPersons(INITIAL_FOUND_PERSONS);
-      }
-    } else {
-      setFoundPersons(INITIAL_FOUND_PERSONS);
-      localStorage.setItem('ven_disaster_found_persons', JSON.stringify(INITIAL_FOUND_PERSONS));
-    }
-  }, []);
-
-  const savePersons = (updatedList: FoundPerson[]) => {
-    setFoundPersons(updatedList);
-    localStorage.setItem('ven_disaster_found_persons', JSON.stringify(updatedList));
-  };
-
-  const handleAddPerson = (newPerson: FoundPerson) => {
-    savePersons([newPerson, ...foundPersons]);
+  const closeOnboarding = () => {
+    localStorage.setItem('ven_onboarded', '1');
+    setShowOnboarding(false);
   };
 
   return (
-    <div className="flex flex-col font-sans overflow-x-hidden" id="app-root-container">
+    <div className="min-h-screen flex flex-col font-sans overflow-x-hidden" id="app-root-container">
+      {showOnboarding && (
+        <OnboardingModal
+          onClose={closeOnboarding}
+          onSelect={(tab) => { setActiveTab(tab as Tab); closeOnboarding(); }}
+        />
+      )}
+
+      <FlagBar />
       <Header 
-        activeTab={activeTab} 
-        onChangeTab={(tab) => { setActiveTab(tab); setIsMenuOpen(false); }} 
+        activeTab={activeTab}
+        onChangeTab={(tab) => { setActiveTab(tab); setIsMenuOpen(false); }}
         isMenuOpen={isMenuOpen}
         onToggleMenu={() => setIsMenuOpen(!isMenuOpen)}
-        onOpenErrorReport={errorReport.openModal} 
+        onReportError={() => setIsErrorModalOpen(true)} 
       />
 
-      <main className={`w-full flex flex-col ${isMenuOpen || activeTab !== 'inicio' ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5' : ''}`}>
+      <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5">
         {isMenuOpen ? (
           <MenuView 
-            activeTab={activeTab} 
-            onSelect={(tab) => { setActiveTab(tab); setIsMenuOpen(false); }} 
-            onOpenErrorReport={() => { errorReport.openModal(); setIsMenuOpen(false); }} 
+            activeTab={activeTab as any} 
+            onSelect={(tab) => { setActiveTab(tab as Tab); setIsMenuOpen(false); }} 
+            onOpenErrorReport={() => { setIsErrorModalOpen(true); setIsMenuOpen(false); }} 
           />
         ) : (
           <>
+
+
+            {/* Vista activa */}
             {activeTab === 'inicio' && <OnboardingView onSelect={setActiveTab} />}
-            {activeTab === 'buscar' && <SearchMissingForm onBack={() => setActiveTab('inicio')} />}
-            {activeTab === 'reportar' && <ReportFoundForm onAddPerson={handleAddPerson} onBack={() => setActiveTab('inicio')} />}
+            {activeTab === 'buscar' && <SearchView onBack={() => setActiveTab('inicio')} />}
+            {activeTab === 'reportar' && <ReportView onBack={() => setActiveTab('inicio')} />}
             {activeTab === 'api' && <ApiIntegrationGuide />}
             {activeTab === 'testimonios' && (
               <div className="w-full max-w-4xl mx-auto py-12 text-center animate-[fadeIn_0.2s_ease-out]">
@@ -85,16 +85,7 @@ export default function App() {
 
       <Footer />
 
-      <ErrorReportModal
-        isOpen={errorReport.isOpen}
-        errorText={errorReport.errorText}
-        sending={errorReport.sending}
-        sent={errorReport.sent}
-        sendError={errorReport.sendError}
-        onChangeText={errorReport.setErrorText}
-        onClose={errorReport.closeModal}
-        onSubmit={errorReport.submit}
-      />
+      <ErrorReportModal open={isErrorModalOpen} onClose={() => setIsErrorModalOpen(false)} />
     </div>
   );
 }

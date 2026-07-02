@@ -3,24 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Campo de formulario reutilizable (input/textarea) con label, icono, error,
- * hint y contador. Fuente única del estilo de inputs: `inputClasses`.
+ * hint y contador. Usa las primitivas de `ui/` (InputLabel, FieldError, accents).
  */
 import React, { useId } from 'react';
 import type { LucideIcon } from 'lucide-react';
+import InputLabel from '../ui/InputLabel';
+import FieldError from '../ui/FieldError';
+import { inputClasses, type Accent } from '../ui/accents';
 
-type Accent = 'blue' | 'rose';
+// Re-export por compatibilidad: varios módulos importan inputClasses desde aquí.
+export { inputClasses };
 
-const FOCUS: Record<Accent, string> = {
-  blue: 'focus:border-blue-500',
-  rose: 'focus:border-rose-500',
-};
-
-export function inputClasses(accent: Accent = 'blue', error?: boolean, hasIcon?: boolean): string {
-  const baseBorder = 'border-slate-300';
-  const border = error ? 'border-red-400 focus:border-red-500' : `${baseBorder} ${FOCUS[accent]}`;
-  const padLeft = hasIcon ? 'pl-10' : 'pl-3.5';
-  return `w-full ${padLeft} pr-3.5 py-2.5 bg-white border rounded-xl text-slate-800 text-sm placeholder-slate-400 outline-none transition-all font-medium shadow-sm ${border}`;
-}
+type FieldAccent = Extract<Accent, 'blue' | 'rose'>;
 
 interface FieldProps {
   label?: string;
@@ -34,9 +28,8 @@ interface FieldProps {
   type?: string;
   icon?: LucideIcon;
   error?: string;
-  invalid?: boolean;
   hint?: string;
-  accent?: Accent;
+  accent?: FieldAccent;
   counter?: boolean;
   numeric?: boolean; // filtra a solo dígitos
   multiline?: boolean;
@@ -56,7 +49,6 @@ export default function Field({
   type = 'text',
   icon: Icon,
   error,
-  invalid,
   hint,
   accent = 'blue',
   counter,
@@ -66,21 +58,21 @@ export default function Field({
   id,
 }: FieldProps) {
   const handle = (v: string) => onChange(numeric ? v.replace(/\D/g, '') : v);
-  const cls = `${inputClasses(accent, invalid || !!error, !!Icon)}${multiline ? ' resize-none' : ''}`;
+  const cls = `${inputClasses(accent, !!error, !!Icon)}${multiline ? ' resize-none' : ''}`;
   const autoId = useId();
   const fieldId = id ?? autoId;
 
   return (
     <div className="space-y-1.5">
       {label && (
-        <label htmlFor={fieldId} className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between gap-2">
-          <span>
+        <div className="flex items-center justify-between gap-2">
+          <InputLabel htmlFor={fieldId} required={required} optional={optional}>
             {label}
-            {required && <span className="text-rose-500"> *</span>}
-            {optional && <span className="text-slate-400 font-medium normal-case"> (opcional)</span>}
-          </span>
-          {counter && maxLength && <span className="text-[10px] font-semibold text-slate-400 normal-case tabular-nums">{value.length}/{maxLength}</span>}
-        </label>
+          </InputLabel>
+          {counter && maxLength && (
+            <span className="text-[10px] font-semibold text-slate-400 normal-case tabular-nums">{value.length}/{maxLength}</span>
+          )}
+        </div>
       )}
       <div className="relative">
         {Icon && (
@@ -94,14 +86,7 @@ export default function Field({
           <input id={fieldId} type={type} inputMode={inputMode} placeholder={placeholder} maxLength={maxLength} value={value} onChange={(e) => handle(e.target.value)} className={cls} />
         )}
       </div>
-      {error ? (
-        <p className="text-xs text-red-600 flex items-center gap-1">
-          <span className="shrink-0">⚠</span>
-          {error}
-        </p>
-      ) : (
-        hint && <p className="text-[11px] text-slate-400">{hint}</p>
-      )}
+      {error ? <FieldError message={error} /> : hint && <p className="text-[11px] text-slate-400">{hint}</p>}
     </div>
   );
 }

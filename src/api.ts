@@ -108,7 +108,9 @@ async function postForm<T>(path: string, form: FormData): Promise<T> {
     try {
       const data = await res.json();
       if (data?.detail) {
-        msg = Array.isArray(data.detail) ? data.detail.map((d: { msg: string }) => d.msg).join(' · ') : String(data.detail);
+        msg = Array.isArray(data.detail)
+          ? data.detail.map((d: { msg: string }) => d.msg).join(' · ')
+          : String(data.detail);
       }
     } catch {
       /* respuesta sin JSON */
@@ -135,7 +137,9 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
     try {
       const data = await res.json();
       if (data?.detail) {
-        msg = Array.isArray(data.detail) ? data.detail.map((d: { msg: string }) => d.msg).join(' · ') : String(data.detail);
+        msg = Array.isArray(data.detail)
+          ? data.detail.map((d: { msg: string }) => d.msg).join(' · ')
+          : String(data.detail);
       }
     } catch {
       /* respuesta sin JSON */

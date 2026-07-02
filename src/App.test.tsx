@@ -18,9 +18,7 @@ vi.mock('./components/ReportFoundForm', () => ({
 }));
 
 vi.mock('./components/OnboardingModal', () => ({
-  default: ({ onClose }: { onClose: () => void }) => (
-    <button onClick={onClose}>Cerrar onboarding</button>
-  ),
+  default: ({ onClose }: { onClose: () => void }) => <button onClick={onClose}>Cerrar onboarding</button>,
 }));
 
 describe('App shell', () => {
@@ -28,12 +26,15 @@ describe('App shell', () => {
     localStorage.clear();
     localStorage.setItem('ven_onboarded', '1');
     localStorage.setItem('ven_disaster_found_persons', '[]');
-    localStorage.setItem('ven_disaster_stats', JSON.stringify({
-      totalFound: 1,
-      totalMissingSearched: 2,
-      reunitedCount: 3,
-      activeShelters: 4,
-    }));
+    localStorage.setItem(
+      'ven_disaster_stats',
+      JSON.stringify({
+        totalFound: 1,
+        totalMissingSearched: 2,
+        reunitedCount: 3,
+        activeShelters: 4,
+      }),
+    );
     reportarFalla.mockReset();
     reportarFalla.mockResolvedValue({});
   });

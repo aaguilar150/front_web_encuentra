@@ -5,6 +5,7 @@
 
 import React, { useState } from 'react';
 import { Terminal, Copy, Check, Server, Database, Code, Cpu, ExternalLink, HelpCircle } from 'lucide-react';
+import Button from "./ui/Button";
 
 export default function ApiIntegrationGuide() {
   const [showHelp, setShowHelp] = useState(false);
@@ -134,16 +135,23 @@ if __name__ == "__main__":
 `;
 
   return (
-    <div className="bg-slate-900 text-slate-100 rounded-2xl p-6 shadow-2xl border border-slate-800" id="api-integration-guide">
+    <div
+      className="bg-slate-900 text-slate-100 rounded-2xl p-6 shadow-2xl border border-slate-800"
+      id="api-integration-guide"
+    >
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800">
         <div>
           <div className="flex items-center gap-2 text-amber-500 font-mono text-xs uppercase tracking-wider mb-1">
             <Terminal size={14} className="animate-pulse" />
             Consola para Desarrolladores
           </div>
-          <h2 className="text-xl font-bold font-sans tracking-tight text-white">Guía de Conexión de API & Base de Datos</h2>
+          <h2 className="text-xl font-bold font-sans tracking-tight text-white">
+            Guía de Conexión de API & Base de Datos
+          </h2>
           <p className="text-sm text-slate-400 mt-1">
-            Instrucciones y adaptadores para integrar tus scripts de <span className="text-blue-400 font-semibold">DeepFace</span> y <span className="text-blue-400 font-semibold">ChromaDB</span> con esta interfaz.
+            Instrucciones y adaptadores para integrar tus scripts de{' '}
+            <span className="text-blue-400 font-semibold">DeepFace</span> y{' '}
+            <span className="text-blue-400 font-semibold">ChromaDB</span> con esta interfaz.
           </p>
         </div>
         <div className="flex items-center gap-3 self-start md:self-center">
@@ -151,8 +159,8 @@ if __name__ == "__main__":
             type="button"
             onClick={() => setShowHelp(!showHelp)}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
-              showHelp 
-                ? 'bg-amber-500 text-slate-950 border-amber-500 shadow-sm' 
+              showHelp
+                ? 'bg-amber-500 text-slate-950 border-amber-500 shadow-sm'
                 : 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-750'
             }`}
             id="btn-toggle-api-help"
@@ -167,38 +175,53 @@ if __name__ == "__main__":
       </div>
 
       {showHelp && (
-        <div className="mt-6 bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-4 text-slate-300 transition-all" id="api-help-container">
+        <div
+          className="mt-6 bg-slate-950 border border-slate-800 rounded-2xl p-5 space-y-4 text-slate-300 transition-all"
+          id="api-help-container"
+        >
           <h3 className="text-sm font-bold text-amber-500 uppercase tracking-wide flex items-center gap-2">
             <HelpCircle size={16} className="text-amber-500" />
             Procedimiento Oficial para Integrar la API y Scripts de Python
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
             <div className="bg-slate-900 p-3.5 rounded-xl border border-slate-800 shadow-sm space-y-1.5">
-              <span className="inline-flex w-5 h-5 items-center justify-center rounded-full bg-slate-800 text-amber-400 text-[10px] font-black">1</span>
+              <span className="inline-flex w-5 h-5 items-center justify-center rounded-full bg-slate-800 text-amber-400 text-[10px] font-black">
+                1
+              </span>
               <h4 className="text-xs font-bold text-white">Configurar Servidor Express</h4>
               <p className="text-[11px] text-slate-400 leading-normal">
-                Monta un servidor en Node.js que escuche peticiones multipart/form-data usando multer para recibir imágenes y metadatos.
+                Monta un servidor en Node.js que escuche peticiones multipart/form-data usando multer para recibir
+                imágenes y metadatos.
               </p>
             </div>
             <div className="bg-slate-900 p-3.5 rounded-xl border border-slate-800 shadow-sm space-y-1.5">
-              <span className="inline-flex w-5 h-5 items-center justify-center rounded-full bg-slate-800 text-amber-400 text-[10px] font-black">2</span>
+              <span className="inline-flex w-5 h-5 items-center justify-center rounded-full bg-slate-800 text-amber-400 text-[10px] font-black">
+                2
+              </span>
               <h4 className="text-xs font-bold text-white">Crear Scripts Adaptadores</h4>
               <p className="text-[11px] text-slate-400 leading-normal">
-                Implementa adaptadores Python ligeros que reciban los argumentos por consola (sys.argv) y llamen a tus clases de DeepFace y ChromaDB.
+                Implementa adaptadores Python ligeros que reciban los argumentos por consola (sys.argv) y llamen a tus
+                clases de DeepFace y ChromaDB.
               </p>
             </div>
             <div className="bg-slate-900 p-3.5 rounded-xl border border-slate-800 shadow-sm space-y-1.5">
-              <span className="inline-flex w-5 h-5 items-center justify-center rounded-full bg-slate-800 text-amber-400 text-[10px] font-black">3</span>
+              <span className="inline-flex w-5 h-5 items-center justify-center rounded-full bg-slate-800 text-amber-400 text-[10px] font-black">
+                3
+              </span>
               <h4 className="text-xs font-bold text-white">Conectar con ChromaDB</h4>
               <p className="text-[11px] text-slate-400 leading-normal">
-                Asegúrate de que el script de carga guarde la imagen codificada en una carpeta accesible y asocie su embedding con la ID en ChromaDB.
+                Asegúrate de que el script de carga guarde la imagen codificada en una carpeta accesible y asocie su
+                embedding con la ID en ChromaDB.
               </p>
             </div>
             <div className="bg-slate-900 p-3.5 rounded-xl border border-slate-800 shadow-sm space-y-1.5">
-              <span className="inline-flex w-5 h-5 items-center justify-center rounded-full bg-slate-800 text-amber-400 text-[10px] font-black">4</span>
+              <span className="inline-flex w-5 h-5 items-center justify-center rounded-full bg-slate-800 text-amber-400 text-[10px] font-black">
+                4
+              </span>
               <h4 className="text-xs font-bold text-white">Formatear Salidas JSON</h4>
               <p className="text-[11px] text-slate-400 leading-normal">
-                El script de búsqueda debe imprimir en salida estándar (stdout) un JSON formateado para que Node.js lo parsee y envíe los matches a la UI.
+                El script de búsqueda debe imprimir en salida estándar (stdout) un JSON formateado para que Node.js lo
+                parsee y envíe los matches a la UI.
               </p>
             </div>
           </div>
@@ -215,7 +238,8 @@ if __name__ == "__main__":
             1. Vista Frontend (React)
           </div>
           <p className="text-xs text-slate-400 leading-relaxed">
-            Formularios listos para capturar datos de refugiados y fotos de búsqueda, enviando peticiones multiparte (<code className="text-slate-200">multipart/form-data</code>) al servidor.
+            Formularios listos para capturar datos de refugiados y fotos de búsqueda, enviando peticiones multiparte (
+            <code className="text-slate-200">multipart/form-data</code>) al servidor.
           </p>
         </div>
 
@@ -227,7 +251,8 @@ if __name__ == "__main__":
             2. Servidor Express (Node)
           </div>
           <p className="text-xs text-slate-400 leading-relaxed">
-            Recibe el archivo, almacena la información relacional (Cédula, contacto, ubicación) y ejecuta el puente en segundo plano llamando al subproceso Python.
+            Recibe el archivo, almacena la información relacional (Cédula, contacto, ubicación) y ejecuta el puente en
+            segundo plano llamando al subproceso Python.
           </p>
         </div>
 
@@ -239,7 +264,9 @@ if __name__ == "__main__":
             3. Motor IA (Python + Chroma)
           </div>
           <p className="text-xs text-slate-400 leading-relaxed">
-            Tus clases <code className="text-amber-500">LoadImage</code> y <code className="text-amber-500">SearchImage</code> procesan las imágenes usando <span className="font-semibold text-slate-300">DeepFace Facenet</span> y buscan la cara más cercana.
+            Tus clases <code className="text-amber-500">LoadImage</code> y{' '}
+            <code className="text-amber-500">SearchImage</code> procesan las imágenes usando{' '}
+            <span className="font-semibold text-slate-300">DeepFace Facenet</span> y buscan la cara más cercana.
           </p>
         </div>
       </div>
@@ -252,17 +279,18 @@ if __name__ == "__main__":
               <Cpu size={14} className="text-indigo-400" />
               Adaptador Python (<code className="text-amber-400">load_image_adapter.py</code>)
             </span>
-            <button
+            <Button
+              variant="ghost"
+              className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-md text-xs gap-1"
               onClick={() => copyToClipboard(pythonAdapterCode, 'python')}
-              className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-md transition-colors text-xs flex items-center gap-1"
               id="btn-copy-python"
             >
               {copiedSection === 'python' ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
               {copiedSection === 'python' ? 'Copiado' : 'Copiar'}
-            </button>
+            </Button>
           </div>
           <div className="relative">
-            <pre className="bg-slate-950 text-slate-300 font-mono text-[11px] md:text-xs p-4 rounded-xl overflow-x-auto max-h-[250px] border border-slate-800/80 scrollbar-thin">
+            <pre className="bg-slate-950 text-slate-300 font-mono text-[11px] md:text-xs p-4 rounded-xl overflow-x-auto max-h-62.5 border border-slate-800/80 scrollbar-thin">
               <code>{pythonAdapterCode}</code>
             </pre>
           </div>
@@ -274,17 +302,18 @@ if __name__ == "__main__":
               <Server size={14} className="text-amber-400" />
               Rutero de Backend sugerido (<code className="text-amber-400">server.ts / api.ts</code>)
             </span>
-            <button
+            <Button
+              variant="ghost"
+              className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-md text-xs gap-1"
               onClick={() => copyToClipboard(expressCode, 'express')}
-              className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-md transition-colors text-xs flex items-center gap-1"
               id="btn-copy-express"
             >
               {copiedSection === 'express' ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
               {copiedSection === 'express' ? 'Copiado' : 'Copiar'}
-            </button>
+            </Button>
           </div>
           <div className="relative">
-            <pre className="bg-slate-950 text-slate-300 font-mono text-[11px] md:text-xs p-4 rounded-xl overflow-x-auto max-h-[300px] border border-slate-800/80 scrollbar-thin">
+            <pre className="bg-slate-950 text-slate-300 font-mono text-[11px] md:text-xs p-4 rounded-xl overflow-x-auto max-h-75 border border-slate-800/80 scrollbar-thin">
               <code>{expressCode}</code>
             </pre>
           </div>
@@ -295,7 +324,10 @@ if __name__ == "__main__":
         <span className="text-xl mt-0.5">💡</span>
         <div className="text-xs text-amber-400 leading-relaxed">
           <span className="font-bold block mb-1">Nota sobre Reconocimiento Facial:</span>
-          Hemos creado un servicio simulado en el frontend que emula el comportamiento de DeepFace. Permite agregar personas en tiempo real (las almacena en tu sesión de navegador vía <code className="text-white">localStorage</code>) para que puedas probar el flujo completo de búsqueda inmediatamente con fotos reales desde la cámara o subiendo archivos.
+          Hemos creado un servicio simulado en el frontend que emula el comportamiento de DeepFace. Permite agregar
+          personas en tiempo real (las almacena en tu sesión de navegador vía{' '}
+          <code className="text-white">localStorage</code>) para que puedas probar el flujo completo de búsqueda
+          inmediatamente con fotos reales desde la cámara o subiendo archivos.
         </div>
       </div>
     </div>

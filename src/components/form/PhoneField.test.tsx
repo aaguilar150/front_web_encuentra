@@ -10,11 +10,10 @@ describe('PhoneField', () => {
 
     render(
       <PhoneField
-        prefix="0424"
-        number=""
-        onPrefixChange={onPrefixChange}
-        onNumberChange={onNumberChange}
-        accent="blue"
+        prefijo="0424"
+        numero=""
+        onPrefijo={onPrefixChange}
+        onNumero={onNumberChange}
       />,
     );
 

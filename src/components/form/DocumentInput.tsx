@@ -5,15 +5,17 @@
  * Documento de identidad: selector de tipo + número (solo dígitos).
  * Compartido por buscar/reportar.
  */
-import React from 'react';
 import { inputClasses } from './Field';
+import { RING } from '../ui/accents';
+
+export type SearchDocTipo = 'V' | 'E' | 'J' | 'P' | 'G' | 'C' | 'R';
 
 export const DOC_TYPES = ['V', 'E', 'J', 'P', 'G', 'C', 'R'];
 
 interface Props {
-  tipo: string;
+  tipo: SearchDocTipo;
   numero: string;
-  onTipo: (v: string) => void;
+  onTipo: (v: SearchDocTipo) => void;
   onNumero: (v: string) => void;
   accent: 'blue' | 'rose';
   error?: boolean;
@@ -21,15 +23,20 @@ interface Props {
 }
 
 export default function DocumentInput({ tipo, numero, onTipo, onNumero, accent, error, numeroId }: Props) {
-  const selectCls = `px-3 py-2.5 font-bold shrink-0 bg-white border border-slate-300 rounded-xl text-slate-800 text-sm outline-none transition-all shadow-sm ${
-    error ? 'border-red-400 focus:border-red-500' : (accent === 'rose' ? 'focus:border-rose-500' : 'focus:border-blue-500')
-  }`;
+  const selectCls = `px-3 py-2.5 font-bold shrink-0 bg-white border border-slate-200 rounded-xl text-slate-800 text-sm outline-none transition-all shadow-sm focus:ring-2 ${RING[accent]}`;
 
   return (
     <div className="flex gap-2">
-      <select value={tipo} onChange={(e) => onTipo(e.target.value)} className={selectCls} aria-label="Tipo de documento">
+      <select
+        value={tipo}
+        onChange={(e) => onTipo(e.target.value as SearchDocTipo)}
+        className={selectCls}
+        aria-label="Tipo de documento"
+      >
         {DOC_TYPES.map((t) => (
-          <option key={t} value={t}>{t}</option>
+          <option key={t} value={t}>
+            {t}
+          </option>
         ))}
       </select>
       <input

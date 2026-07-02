@@ -1,5 +1,8 @@
-import { Heart, Instagram, Mail, Facebook, Twitter, Youtube, Globe, ChevronDown } from 'lucide-react';
-
+/**
+ * Pie de página: mensaje humanitario + canales de contacto (Instagram, TikTok, email).
+ */
+import React from 'react';
+import { Heart, Instagram, Mail, ChevronDown } from 'lucide-react';
 import FlagBar from './FlagBar';
 
 export default function Footer() {
